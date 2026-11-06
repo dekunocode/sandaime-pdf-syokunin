@@ -1,9 +1,14 @@
 # README 用のスクリーンショットを撮る（手動実行）。
-# Actions → Screenshot → Run workflow で実行し、Artifacts の screenshot.png をダウンロードする。
+# Actions → Screenshot → Run workflow で実行すると、
+# 撮った画像を screenshot ブランチの docs/screenshot.png に入れる（main は変えない）。
+# 見て良ければ、その画像を main の docs/screenshot.png にコピーする。
 name: Screenshot
 
 on:
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   screenshot:
@@ -22,3 +27,15 @@ jobs:
         with:
           name: screenshot
           path: out/screenshot.png
+
+      - name: Push to screenshot branch
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B screenshot
+          mkdir -p docs
+          cp out/screenshot.png docs/screenshot.png
+          git add docs/screenshot.png
+          git commit -m "スクリーンショットを更新 (${GITHUB_SHA::7})"
+          git push -f origin screenshot
