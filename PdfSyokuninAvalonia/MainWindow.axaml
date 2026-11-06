@@ -1,0 +1,496 @@
+<Window x:Class="PdfSyokunin.MainWindow"
+        xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:PdfSyokunin.Views"
+        Title="三代目PDF職人" Width="1120" Height="660"
+        MinWidth="860" MinHeight="560" WindowStartupLocation="CenterScreen"
+        Icon="/Assets/app-icon.ico">
+  <Window.KeyBindings>
+    <KeyBinding Gesture="Ctrl+O" Command="{Binding AddFilesCommand}" />
+    <KeyBinding Gesture="Ctrl+S" Command="{Binding OpenSavePanelCommand}" />
+    <KeyBinding Gesture="Ctrl+Z" Command="{Binding UndoCommand}" />
+    <KeyBinding Gesture="Ctrl+Y" Command="{Binding RedoCommand}" />
+    <KeyBinding Gesture="Ctrl+A" Command="{Binding SelectAllCommand}" />
+    <KeyBinding Gesture="Ctrl+R" Command="{Binding RotateRightCommand}" />
+    <KeyBinding Gesture="Ctrl+L" Command="{Binding RotateLeftCommand}" />
+    <KeyBinding Gesture="Delete" Command="{Binding DeleteSelectedCommand}" />
+    <KeyBinding Gesture="Escape" Command="{Binding EscapeCommand}" />
+  </Window.KeyBindings>
+
+  <Window.Styles>
+    <Style Selector="ListBox#PageList ListBoxItem">
+      <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="Border.page-card">
+      <Setter Property="Padding" Value="8" />
+    </Style>
+    <Style Selector="ListBox#PageList ListBoxItem:pointerover Border.page-card">
+      <Setter Property="BorderBrush" Value="#707177" />
+    </Style>
+    <Style Selector="ListBox#PageList ListBoxItem:selected Border.page-card">
+      <Setter Property="BorderBrush" Value="#48B5F5" />
+      <Setter Property="BorderThickness" Value="2" />
+      <Setter Property="Padding" Value="7" />
+      <Setter Property="Background" Value="#243746" />
+    </Style>
+    <Style Selector="Border.page-card.dragging">
+      <Setter Property="Opacity" Value="0.4" />
+    </Style>
+    <Style Selector="Button.task-card">
+      <Setter Property="Margin" Value="5" />
+      <Setter Property="Padding" Value="14,12" />
+      <Setter Property="MinHeight" Value="118" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="VerticalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="VerticalContentAlignment" Value="Top" />
+      <Setter Property="Background" Value="#292A2D" />
+      <Setter Property="BorderBrush" Value="#45464A" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="10" />
+    </Style>
+    <Style Selector="Button.task-card:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="BorderBrush" Value="#48B5F5" />
+    </Style>
+    <Style Selector="Button.mini">
+      <Setter Property="Width" Value="24" />
+      <Setter Property="Height" Value="22" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Margin" Value="1,0" />
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="TextBlock.glyph">
+      <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets" />
+    </Style>
+    <Style Selector="TextBlock.section">
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Margin" Value="4,6,0,0" />
+    </Style>
+  </Window.Styles>
+
+  <Grid RowDefinitions="52,*,28">
+    <Border Grid.Row="0" Background="#191A1D" BorderBrush="#3A3B3F" BorderThickness="0,0,0,1">
+      <Grid Margin="10,0" ColumnDefinitions="220,*,Auto">
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+          <Image Source="/Assets/app-icon.png" Width="30" Height="30" />
+          <StackPanel Margin="9,0,0,0" VerticalAlignment="Center">
+            <TextBlock Text="三代目PDF職人" FontSize="15" FontWeight="SemiBold" />
+            <TextBlock Text="PDFワークスペース" FontSize="9" Classes="muted" />
+          </StackPanel>
+        </StackPanel>
+        <TextBlock Grid.Column="1" Text="{Binding WorkspaceTitle}" FontSize="14" FontWeight="SemiBold"
+                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="8,0" />
+        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+          <Button Classes="tool" Command="{Binding NewWorkspaceCommand}" ToolTip.Tip="新しいワークスペース（最初の画面へ戻る）">
+            <PathIcon Width="20" Height="20"
+                      Data="M14,2H6C4.9,2 4,2.9 4,4V20C4,21.1 4.9,22 6,22H18C19.1,22 20,21.1 20,20V8L14,2M13,4L18,9H13V4M6,4H11V11H18V20H6V4Z" />
+          </Button>
+          <Button Classes="tool" Command="{Binding AddFilesCommand}" ToolTip.Tip="PDFを追加して結合 (Ctrl+O)">
+            <PathIcon Width="20" Height="20"
+                      Data="M20,6H12L10,4H4C2.9,4 2,4.9 2,6V18C2,19.1 2.9,20 4,20H20C21.1,20 22,19.1 22,18V8C22,6.9 21.1,6 20,6M20,18H4V8H20V18M13,9H11V12H8V14H11V17H13V14H16V12H13V9Z" />
+          </Button>
+          <Separator Margin="4,9" />
+          <Button Classes="tool" Command="{Binding UndoCommand}" IsEnabled="{Binding CanUndo}" ToolTip.Tip="元に戻す (Ctrl+Z)">
+            <PathIcon Width="20" Height="20"
+                      Data="M12.5,8C9.85,8 7.45,9 5.6,10.6L2,7V16H11L7.62,12.62C8.97,11.62 10.65,11 12.5,11C15.65,11 18.34,13.07 19.25,16L22.16,15.04C20.84,10.96 17.03,8 12.5,8Z" />
+          </Button>
+          <Button Classes="tool" Command="{Binding RedoCommand}" IsEnabled="{Binding CanRedo}" ToolTip.Tip="やり直す (Ctrl+Y)">
+            <PathIcon Width="20" Height="20"
+                      Data="M11.5,8C14.15,8 16.55,9 18.4,10.6L22,7V16H13L16.38,12.62C15.03,11.62 13.35,11 11.5,11C8.35,11 5.66,13.07 4.75,16L1.84,15.04C3.16,10.96 6.97,8 11.5,8Z" />
+          </Button>
+          <Button Classes="tool" Content="&#xE105;" Command="{Binding OpenSavePanelCommand}" IsEnabled="{Binding CanEdit}" ToolTip.Tip="保存 (Ctrl+S)" />
+          <Separator Margin="4,9" />
+          <Button Classes="tool" Content="&#xE946;" Command="{Binding OpenInfoCommand}" ToolTip.Tip="アプリ情報" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- スタート画面：やりたい作業から選ばせ、同じワークスペースへ案内付きで入る。 -->
+    <ScrollViewer Grid.Row="1" IsVisible="{Binding !HasDocument}" VerticalScrollBarVisibility="Auto">
+      <StackPanel Width="700" HorizontalAlignment="Center" Margin="0,28,0,20" Spacing="16">
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="14">
+          <Image Source="/Assets/app-icon.png" Width="56" Height="56" />
+          <StackPanel VerticalAlignment="Center">
+            <TextBlock Text="何をしますか？" FontSize="24" FontWeight="SemiBold" />
+            <TextBlock Text="作業を選ぶとPDFを開きます。どの作業から始めても、あとで他の操作もできます。" Classes="muted" />
+          </StackPanel>
+        </StackPanel>
+
+        <UniformGrid Columns="4">
+          <Button Classes="task-card" Command="{Binding StartTaskCommand}" CommandParameter="Merge">
+            <StackPanel Spacing="6">
+              <TextBlock Classes="glyph" Text="&#xE8F1;" FontSize="26" Foreground="#48B5F5" />
+              <TextBlock Text="PDFを結合" FontSize="14" FontWeight="SemiBold" />
+              <TextBlock Text="複数のPDFを好きな順番で1つにまとめる" FontSize="10" Classes="muted" TextWrapping="Wrap" />
+            </StackPanel>
+          </Button>
+          <Button Classes="task-card" Command="{Binding StartTaskCommand}" CommandParameter="Organize">
+            <StackPanel Spacing="6">
+              <TextBlock Classes="glyph" Text="&#xE7AD;" FontSize="26" Foreground="#5CD08B" />
+              <TextBlock Text="ページを整理" FontSize="14" FontWeight="SemiBold" />
+              <TextBlock Text="回転・並べ替え・不要なページの削除" FontSize="10" Classes="muted" TextWrapping="Wrap" />
+            </StackPanel>
+          </Button>
+          <Button Classes="task-card" Command="{Binding StartTaskCommand}" CommandParameter="Extract">
+            <StackPanel Spacing="6">
+              <TextBlock Classes="glyph" Text="&#xE8C8;" FontSize="26" Foreground="#F5A524" />
+              <TextBlock Text="抜き出す" FontSize="14" FontWeight="SemiBold" />
+              <TextBlock Text="一部のページ・テキスト・画像を取り出す" FontSize="10" Classes="muted" TextWrapping="Wrap" />
+            </StackPanel>
+          </Button>
+          <Button Classes="task-card" Command="{Binding StartTaskCommand}" CommandParameter="Protect">
+            <StackPanel Spacing="6">
+              <TextBlock Classes="glyph" Text="&#xE72E;" FontSize="26" Foreground="#E879B9" />
+              <TextBlock Text="パスワード" FontSize="14" FontWeight="SemiBold" />
+              <TextBlock Text="パスワードを設定する・解除する" FontSize="10" Classes="muted" TextWrapping="Wrap" />
+            </StackPanel>
+          </Button>
+        </UniformGrid>
+
+        <Border Height="86" Margin="5,0" Background="#24262A" BorderBrush="#168BCC"
+                BorderThickness="1" CornerRadius="12" Padding="18,12">
+          <Grid ColumnDefinitions="60,*,Auto">
+            <TextBlock Classes="glyph" Text="&#xE896;" FontSize="34" Foreground="#48B5F5" VerticalAlignment="Center" />
+            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+              <TextBlock Text="またはPDFをここへドロップ" FontSize="16" FontWeight="SemiBold" />
+              <TextBlock Text="複数のファイルをまとめてドロップすると、そのまま結合の準備ができます" FontSize="11" Margin="0,4,0,0" Classes="muted" />
+            </StackPanel>
+            <Button Grid.Column="2" Content="ファイルを選択" Command="{Binding AddFilesCommand}" Classes="primary" VerticalAlignment="Center" />
+          </Grid>
+        </Border>
+
+        <StackPanel Margin="5,0">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="最近使ったファイル" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Content="履歴を消去" Command="{Binding ClearRecentFilesCommand}" Classes="compact"
+                    FontSize="10" IsVisible="{Binding HasRecentFiles}" />
+          </Grid>
+          <TextBlock Text="まだありません" FontSize="11" Classes="muted" Margin="0,6,0,0" IsVisible="{Binding !HasRecentFiles}" />
+          <ItemsControl ItemsSource="{Binding RecentFiles}" Margin="0,5,0,0">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Grid Height="42" Margin="0,2" ColumnDefinitions="*,36">
+                  <Button Command="{Binding DataContext.OpenRecentCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                          CommandParameter="{Binding}" Padding="10,0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                    <Grid ColumnDefinitions="30,*,Auto">
+                      <TextBlock Classes="glyph" Text="&#xE736;" FontSize="18" VerticalAlignment="Center" />
+                      <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding FileName}" FontSize="11" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding DirectoryName}" FontSize="9" Classes="muted" TextTrimming="CharacterEllipsis" />
+                      </StackPanel>
+                      <TextBlock Grid.Column="2" Classes="glyph" Text="&#xE76C;" VerticalAlignment="Center" />
+                    </Grid>
+                  </Button>
+                  <Button Grid.Column="1" Content="×" ToolTip.Tip="履歴から削除"
+                          Command="{Binding DataContext.RemoveRecentFileCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                          CommandParameter="{Binding}" Classes="compact" Width="32" Padding="4" />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </StackPanel>
+    </ScrollViewer>
+
+    <Grid Grid.Row="1" IsVisible="{Binding HasDocument}" ColumnDefinitions="214,*,240">
+      <!-- 左：結合するファイルの一覧。上から順に1つのPDFになる。 -->
+      <Border Background="#1C1D20" BorderBrush="#3A3B3F" BorderThickness="0,0,1,0">
+        <Grid Margin="9" RowDefinitions="Auto,Auto,*,Auto">
+          <TextBlock Text="結合するPDF" FontWeight="SemiBold" Margin="4,3,0,0" />
+          <TextBlock Grid.Row="1" Text="上から順に1つのPDFになります。↑↓で順番を変更できます。" FontSize="10"
+                     Classes="muted" TextWrapping="Wrap" Margin="4,3,0,9" />
+          <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding SourceFiles}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Border Classes="card" Margin="0,0,0,7" Padding="8">
+                    <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
+                      <Border Grid.RowSpan="2" Width="22" Height="22" CornerRadius="11" Margin="0,0,8,0"
+                              Background="{Binding Brush}" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Order}" Foreground="#111214" FontSize="11" FontWeight="Bold"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Border>
+                      <TextBlock Grid.Column="1" Text="{Binding FileName}" FontSize="11" FontWeight="SemiBold"
+                                 TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding FullPath}" VerticalAlignment="Center" />
+                      <Button Grid.Column="2" Content="×" Classes="mini" ToolTip.Tip="このPDFを外す"
+                              Command="{Binding DataContext.RemoveSourceCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                              CommandParameter="{Binding}" HorizontalAlignment="Right" />
+                      <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding PageCount, StringFormat={}{0}ページ}" FontSize="9"
+                                 Classes="muted" VerticalAlignment="Center" />
+                      <StackPanel Grid.Row="1" Grid.Column="2" Orientation="Horizontal" Margin="0,4,0,0">
+                        <Button Content="↑" Classes="mini" ToolTip.Tip="前へ（先に結合）" IsEnabled="{Binding CanMoveUp}"
+                                Command="{Binding DataContext.MoveSourceUpCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                CommandParameter="{Binding}" />
+                        <Button Content="↓" Classes="mini" ToolTip.Tip="後ろへ（後に結合）" IsEnabled="{Binding CanMoveDown}"
+                                Command="{Binding DataContext.MoveSourceDownCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                CommandParameter="{Binding}" />
+                      </StackPanel>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+          <Button Grid.Row="3" Content="＋ PDFを追加して結合" Command="{Binding AddFilesCommand}" Classes="primary"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                  ToolTip.Tip="末尾に結合されます。ページの間にドロップすると、その位置に挿入されます。" />
+        </Grid>
+      </Border>
+
+      <Grid Grid.Column="1" RowDefinitions="42,Auto,*">
+        <Border Background="#242528" BorderBrush="#3A3B3F" BorderThickness="0,0,0,1">
+          <Grid Margin="9,0" ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto">
+            <Button Content="全選択" Command="{Binding SelectAllCommand}" Classes="compact" ToolTip.Tip="Ctrl+A" />
+            <Button Grid.Column="1" Content="選択解除" Command="{Binding ClearSelectionCommand}" Classes="compact" ToolTip.Tip="Esc" />
+            <TextBlock Grid.Column="2" Text="クリックで選択・Ctrl／Shiftで複数選択・ドラッグで並べ替え" FontSize="10" Classes="muted"
+                       VerticalAlignment="Center" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="6,0" />
+            <Button Grid.Column="3" Content="−" Command="{Binding ZoomOutCommand}" Classes="compact" MinWidth="32" ToolTip.Tip="縮小（Ctrl＋ホイール）" />
+            <Button Grid.Column="4" Content="{Binding ZoomText}" Command="{Binding ResetZoomCommand}" Classes="compact" MinWidth="60" ToolTip.Tip="100%に戻す" />
+            <Button Grid.Column="5" Content="＋" Command="{Binding ZoomInCommand}" Classes="compact" MinWidth="32" ToolTip.Tip="拡大（Ctrl＋ホイール）" />
+          </Grid>
+        </Border>
+
+        <Border Grid.Row="1" Margin="10,10,10,0" Background="#1B3243" BorderBrush="#2F6E96" BorderThickness="1"
+                CornerRadius="8" Padding="12,9" IsVisible="{Binding IsGuideVisible}">
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <TextBlock Classes="glyph" Text="&#xE82F;" FontSize="18" Foreground="#48B5F5" VerticalAlignment="Top" Margin="0,2,10,0" />
+            <StackPanel Grid.Column="1" Spacing="2">
+              <TextBlock Text="{Binding GuideTitle}" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding GuideText}" FontSize="11" TextWrapping="Wrap" Foreground="#D5E6F2" />
+            </StackPanel>
+            <Button Grid.Column="2" Content="×" Classes="mini" VerticalAlignment="Top" Margin="8,0,0,0"
+                    Command="{Binding DismissGuideCommand}" ToolTip.Tip="案内を閉じる" />
+          </Grid>
+        </Border>
+
+        <ScrollViewer x:Name="PageScrollViewer" Grid.Row="2" Background="#111214" Padding="10">
+          <ListBox x:Name="PageList" ItemsSource="{Binding Pages}" Background="Transparent" SelectionMode="Multiple">
+            <!-- 選択状態はカードの枠で示すため、テーマ標準の塗りつぶしは消す。 -->
+            <ListBox.Resources>
+              <SolidColorBrush x:Key="SystemControlHighlightListLowBrush" Color="Transparent" />
+              <SolidColorBrush x:Key="SystemControlHighlightListMediumBrush" Color="Transparent" />
+              <SolidColorBrush x:Key="SystemControlHighlightListAccentLowBrush" Color="Transparent" />
+              <SolidColorBrush x:Key="SystemControlHighlightListAccentMediumBrush" Color="Transparent" />
+              <SolidColorBrush x:Key="SystemControlHighlightListAccentHighBrush" Color="Transparent" />
+            </ListBox.Resources>
+            <ListBox.ItemsPanel>
+              <ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+            </ListBox.ItemsPanel>
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <Grid Margin="7">
+                  <Border Classes="card page-card" Classes.dragging="{Binding IsDragging}" Cursor="Hand">
+                    <Border.ContextMenu>
+                      <ContextMenu>
+                        <MenuItem Header="右に回転" Tag="rotate-right" InputGesture="Ctrl+R" Click="PageMenu_OnClick" />
+                        <MenuItem Header="左に回転" Tag="rotate-left" InputGesture="Ctrl+L" Click="PageMenu_OnClick" />
+                        <Separator />
+                        <MenuItem Header="この前にPDFを挿入…" Tag="insert-before" Click="PageMenu_OnClick" />
+                        <MenuItem Header="この後ろにPDFを挿入…" Tag="insert-after" Click="PageMenu_OnClick" />
+                        <Separator />
+                        <MenuItem Header="選択ページをPDFとして保存…" Tag="export" Click="PageMenu_OnClick" />
+                        <MenuItem Header="選択ページを削除" Tag="delete" InputGesture="Delete" Click="PageMenu_OnClick" />
+                      </ContextMenu>
+                    </Border.ContextMenu>
+                    <Grid RowDefinitions="Auto,Auto,Auto,Auto">
+                      <Border Height="4" CornerRadius="2" Margin="0,0,0,7" Background="{Binding SourceBrush}" />
+                      <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto">
+                        <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" VerticalAlignment="Center" ToolTip.Tip="選択に追加・解除" />
+                        <TextBlock Grid.Column="1" Text="{Binding DisplayNumber, StringFormat={}{0}ページ目}" FontWeight="SemiBold"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <PathIcon Grid.Column="2" Width="14" Height="14" Foreground="#B7B7BD" VerticalAlignment="Center"
+                                  ToolTip.Tip="カードをドラッグして移動"
+                                  Data="M7,19V17H9V19H7M11,19V17H13V19H11M15,19V17H17V19H15M7,15V13H9V15H7M11,15V13H13V15H11M15,15V13H17V15H15M7,11V9H9V11H7M11,11V9H13V11H11M15,11V9H17V11H15M7,7V5H9V7H7M11,7V5H13V7H11M15,7V5H17V7H15Z" />
+                      </Grid>
+                      <Border Grid.Row="2" Margin="0,7" Background="White" ClipToBounds="True"
+                              Width="{Binding ThumbnailWidth}" Height="{Binding ThumbnailHeight}">
+                        <Image Source="{Binding Thumbnail}" Width="{Binding ThumbnailWidth}" Height="{Binding ThumbnailHeight}" Stretch="Uniform">
+                          <Image.RenderTransform><RotateTransform Angle="{Binding Rotation}" /></Image.RenderTransform>
+                        </Image>
+                      </Border>
+                      <Grid Grid.Row="3" ColumnDefinitions="Auto,*,Auto">
+                        <Ellipse Width="7" Height="7" Fill="{Binding SourceBrush}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                        <TextBlock Grid.Column="1" Text="{Binding SourceFileName}" FontSize="9" Classes="muted"
+                                   TextTrimming="CharacterEllipsis" MaxWidth="96" ToolTip.Tip="{Binding SourceFileName}" />
+                        <TextBlock Grid.Column="2" Text="{Binding OriginalPageNumber, StringFormat=元 {0}}" FontSize="9" Classes="muted" Margin="4,0,0,0" />
+                      </Grid>
+                    </Grid>
+                  </Border>
+
+                  <!-- ドラッグ中は対象カード全体と、実際に挿入される左右の境界を同時に示す。 -->
+                  <Border BorderBrush="#48B5F5" BorderThickness="2" CornerRadius="9"
+                          IsVisible="{Binding IsDropBefore}" IsHitTestVisible="False" ZIndex="8" />
+                  <Border Width="7" Margin="-6,-5,0,-5" HorizontalAlignment="Left"
+                          Background="#48B5F5" CornerRadius="4"
+                          IsVisible="{Binding IsDropBefore}" IsHitTestVisible="False" ZIndex="9" />
+                  <Border BorderBrush="#48B5F5" BorderThickness="2" CornerRadius="9"
+                          IsVisible="{Binding IsDropAfter}" IsHitTestVisible="False" ZIndex="8" />
+                  <Border Width="7" Margin="0,-5,-6,-5" HorizontalAlignment="Right"
+                          Background="#48B5F5" CornerRadius="4"
+                          IsVisible="{Binding IsDropAfter}" IsHitTestVisible="False" ZIndex="9" />
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </ScrollViewer>
+        <Border x:Name="DragHint" Grid.Row="2" IsVisible="False" IsHitTestVisible="False" ZIndex="12"
+                HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,66"
+                Background="#EE168BCC" CornerRadius="16" Padding="16,7">
+          <TextBlock x:Name="DragHintText" Foreground="White" FontWeight="SemiBold" />
+        </Border>
+      </Grid>
+
+      <!-- 右：選択状態に応じて、いま使える操作だけを表示する。 -->
+      <Border Grid.Column="2" Background="#1C1D20" BorderBrush="#3A3B3F" BorderThickness="1,0,0,0">
+        <Grid RowDefinitions="*,Auto">
+          <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="9" Spacing="8">
+              <Border Classes="card" IsVisible="{Binding !HasSelection}">
+                <StackPanel Spacing="6">
+                  <TextBlock Text="ページが選択されていません" FontWeight="SemiBold" />
+                  <TextBlock Text="ページをクリックして選択すると、回転・移動・削除・書き出しの操作がここに表示されます。Ctrl／Shift＋クリックで複数選択できます。"
+                             FontSize="10" Classes="muted" TextWrapping="Wrap" />
+                  <Button Content="すべて選択 (Ctrl+A)" Command="{Binding SelectAllCommand}" Classes="compact" HorizontalAlignment="Stretch" />
+                </StackPanel>
+              </Border>
+
+              <StackPanel IsVisible="{Binding HasSelection}" Spacing="8">
+                <Grid ColumnDefinitions="*,Auto" Margin="4,2,0,0">
+                  <TextBlock Text="{Binding SelectionHeader}" FontWeight="SemiBold" Foreground="#48B5F5" VerticalAlignment="Center" />
+                  <Button Grid.Column="1" Content="解除" Command="{Binding ClearSelectionCommand}" Classes="compact" ToolTip.Tip="Esc" />
+                </Grid>
+                <Border Classes="card">
+                  <StackPanel Spacing="4">
+                    <Grid ColumnDefinitions="*,*">
+                      <Button Content="↶ 左回転" Command="{Binding RotateLeftCommand}" Classes="compact" HorizontalAlignment="Stretch" ToolTip.Tip="Ctrl+L" />
+                      <Button Grid.Column="1" Content="右回転 ↷" Command="{Binding RotateRightCommand}" Classes="compact" HorizontalAlignment="Stretch" ToolTip.Tip="Ctrl+R" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,*">
+                      <Button Content="← 前へ" Command="{Binding MovePreviousCommand}" Classes="compact" HorizontalAlignment="Stretch" ToolTip.Tip="Ctrl+←" />
+                      <Button Grid.Column="1" Content="後ろへ →" Command="{Binding MoveNextCommand}" Classes="compact" HorizontalAlignment="Stretch" ToolTip.Tip="Ctrl+→" />
+                    </Grid>
+                    <Button Content="選択ページを削除" Command="{Binding DeleteSelectedCommand}" Classes="compact"
+                            HorizontalAlignment="Stretch" Foreground="#FF8A80" ToolTip.Tip="Delete" />
+                  </StackPanel>
+                </Border>
+                <TextBlock Text="選択ページを書き出す" Classes="section" />
+                <Border Classes="card">
+                  <StackPanel Spacing="4">
+                    <Button Content="PDFとして保存…" Command="{Binding OpenSavePanelCommand}" CommandParameter="selected"
+                            Classes="compact" HorizontalAlignment="Stretch" />
+                    <Button Content="テキストを抽出…" Command="{Binding ExtractTextCommand}" CommandParameter="selected"
+                            Classes="compact" HorizontalAlignment="Stretch" />
+                    <Button Content="埋め込み画像を抽出…" Command="{Binding ExtractImagesCommand}" CommandParameter="selected"
+                            Classes="compact" HorizontalAlignment="Stretch" />
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+
+              <TextBlock Text="ドキュメント全体" Classes="section" />
+              <Border Classes="card">
+                <StackPanel Spacing="4">
+                  <Button Content="全ページのテキストを抽出…" Command="{Binding ExtractTextCommand}" CommandParameter="all"
+                          Classes="compact" HorizontalAlignment="Stretch" />
+                  <Button Content="全ページの画像を抽出…" Command="{Binding ExtractImagesCommand}" CommandParameter="all"
+                          Classes="compact" HorizontalAlignment="Stretch" />
+                </StackPanel>
+              </Border>
+            </StackPanel>
+          </ScrollViewer>
+          <Border Grid.Row="1" BorderBrush="#3A3B3F" BorderThickness="0,1,0,0" Padding="9">
+            <Button Content="保存… (Ctrl+S)" Command="{Binding OpenSavePanelCommand}" IsEnabled="{Binding CanEdit}"
+                    Classes="primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                    ToolTip.Tip="保存するページの範囲やパスワードを選んで保存します" />
+          </Border>
+        </Grid>
+      </Border>
+    </Grid>
+
+    <Border Grid.Row="2" Background="#191A1D" BorderBrush="#3A3B3F" BorderThickness="0,1,0,0">
+      <Grid Margin="10,0" ColumnDefinitions="Auto,*,Auto">
+        <TextBlock Text="{Binding SelectionText}" FontSize="10" VerticalAlignment="Center" IsVisible="{Binding HasDocument}" />
+        <TextBlock Grid.Column="1" Text="未保存の変更あり" Foreground="#FFCA6A" FontSize="10" VerticalAlignment="Center" HorizontalAlignment="Center" IsVisible="{Binding IsDirty}" />
+        <TextBlock Grid.Column="2" Text="PDFをページの間にドロップすると、その位置に挿入されます" Classes="muted" FontSize="9"
+                   VerticalAlignment="Center" IsVisible="{Binding HasDocument}" />
+        <TextBlock Grid.Column="2" Text="PDFを画面内のどこへでもドロップできます" Classes="muted" FontSize="9"
+                   VerticalAlignment="Center" IsVisible="{Binding !HasDocument}" />
+      </Grid>
+    </Border>
+
+    <!-- 保存パネル：範囲・パスワード・保護解除をここにまとめる。 -->
+    <Border Grid.RowSpan="3" Background="#D0101112" IsVisible="{Binding IsSavePanelOpen}" ZIndex="25">
+      <Border Width="460" Classes="card" Padding="22" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <StackPanel Spacing="16">
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel>
+              <TextBlock Text="PDFを保存" FontSize="20" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding SaveSummary}" Classes="muted" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+            <Button Grid.Column="1" Content="×" Command="{Binding CloseSavePanelCommand}" Classes="compact" VerticalAlignment="Top" />
+          </Grid>
+
+          <StackPanel Spacing="2">
+            <TextBlock Text="保存するページ" FontWeight="SemiBold" Margin="0,0,0,4" />
+            <RadioButton GroupName="SaveScope" Content="{Binding AllPagesOptionText}" IsChecked="{Binding SaveAllPages, Mode=TwoWay}" />
+            <RadioButton GroupName="SaveScope" Content="{Binding SelectedPagesOptionText}" IsChecked="{Binding SaveSelectionOnly, Mode=TwoWay}"
+                         IsEnabled="{Binding HasSelection}" />
+          </StackPanel>
+
+          <StackPanel Spacing="6">
+            <ToggleSwitch Content="パスワードで保護する" IsChecked="{Binding ProtectOutput}" />
+            <TextBox PlaceholderText="パスワード" PasswordChar="●" Text="{Binding OutputPassword}" IsVisible="{Binding ProtectOutput}" />
+            <TextBox PlaceholderText="パスワード（確認）" PasswordChar="●" Text="{Binding ConfirmOutputPassword}" IsVisible="{Binding ProtectOutput}" />
+            <TextBlock Text="AES-256で暗号化されます。パスワードを忘れると開けなくなるので注意してください。" FontSize="10"
+                       Classes="muted" TextWrapping="Wrap" IsVisible="{Binding ProtectOutput}" />
+          </StackPanel>
+
+          <Border Background="#3A3120" BorderBrush="#8A6D2B" BorderThickness="1" CornerRadius="6" Padding="10,8"
+                  IsVisible="{Binding ShowDecryptNotice}">
+            <TextBlock Text="元のPDFはパスワードで保護されています。このまま保存すると、パスワードなしのPDFになります（保護の解除）。"
+                       FontSize="11" TextWrapping="Wrap" Foreground="#FFE2A8" />
+          </Border>
+
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="キャンセル" Command="{Binding CloseSavePanelCommand}" Classes="compact" />
+            <Button Content="保存先を選んで保存…" Command="{Binding ConfirmSaveCommand}" Classes="primary" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Border>
+
+    <Border Grid.RowSpan="3" Background="#D0101112" IsVisible="{Binding IsInfoOpen}" ZIndex="20">
+      <Border Width="620" MaxHeight="540" Classes="card" Padding="20" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <Grid RowDefinitions="Auto,*,Auto">
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <Image Source="/Assets/app-icon.png" Width="44" Height="44" />
+            <StackPanel Grid.Column="1" Margin="12,0">
+              <TextBlock Text="三代目PDF職人" FontSize="20" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding Settings.VersionText}" Classes="muted" />
+            </StackPanel>
+            <Button Grid.Column="2" Content="×" Command="{Binding CloseInfoCommand}" Classes="compact" />
+          </Grid>
+          <views:SettingsView Grid.Row="1" Margin="0,18,0,14" DataContext="{Binding Settings}" />
+          <Button Grid.Row="2" Content="閉じる" Command="{Binding CloseInfoCommand}" Classes="primary" HorizontalAlignment="Right" />
+        </Grid>
+      </Border>
+    </Border>
+
+    <Border Grid.RowSpan="3" Background="#B0101112" IsVisible="{Binding IsBusy}" ZIndex="30">
+      <Border Classes="card" Padding="26" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <StackPanel Spacing="14" MinWidth="280">
+          <ProgressBar IsIndeterminate="True" Height="5" />
+          <TextBlock Text="{Binding BusyText}" FontSize="15" HorizontalAlignment="Center" />
+          <Button Content="キャンセル" Command="{Binding CancelOperationCommand}" Classes="compact" HorizontalAlignment="Center" />
+        </StackPanel>
+      </Border>
+    </Border>
+
+    <Border Grid.Row="1" Background="#E02D2F33" BorderBrush="#48B5F5" BorderThickness="1" CornerRadius="7" Padding="14,9"
+            HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,20" IsVisible="{Binding IsNotificationVisible}" ZIndex="40">
+      <TextBlock Text="{Binding NotificationMessage}" />
+    </Border>
+  </Grid>
+</Window>

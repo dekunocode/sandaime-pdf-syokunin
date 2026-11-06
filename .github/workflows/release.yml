@@ -1,0 +1,88 @@
+# リリース: 単一ファイル exe を作って、GitHub Releases に「下書き」として添付する。
+# 内容を確認してから、GitHub 上で手動で公開する。始め方は 2 通り。
+#
+# 1. GitHub の Actions → Release → Run workflow で、バージョン（例: 1.1.0）を入れて実行する
+#    （タグ v1.1.0 は、Releases の下書きを公開したときに自動で作られる）
+# 2. v から始まるタグを push する
+#      git tag v1.1.0
+#      git push origin v1.1.0
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'バージョン（例: 1.1.0。先頭の v は付けない）'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  # タグの push なら、そのタグ名。手動実行なら、入力したバージョンに v を付けたもの
+  RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && format('v{0}', inputs.version) || github.ref_name }}
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      # 手動実行で、同じタグがすでにあるときは止める（上書きしない）
+      - name: Check tag
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        run: |
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "バージョンは 1.1.0 のような形で入れてください（入力: ${{ inputs.version }}）"; exit 1
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/$RELEASE_TAG" >/dev/null; then
+            echo "タグ $RELEASE_TAG はすでにあります"; exit 1
+          fi
+
+      - name: Test
+        run: dotnet test PdfSyokuninAvalonia.slnx -c Release
+
+      # タグ名（v1.1.0）から v を除いた値を、exe のバージョンにする
+      - name: Publish single-file exe
+        shell: bash
+        run: |
+          version="${RELEASE_TAG#v}"
+          dotnet publish PdfSyokuninAvalonia/PdfSyokuninAvalonia.csproj -c Release -p:Version="$version"
+
+      - name: Collect release files
+        shell: bash
+        run: |
+          mkdir dist
+          cp "artifacts/publish/三代目PDF職人.exe" dist/
+          cp LICENSE dist/
+          cp PdfSyokuninAvalonia/THIRD-PARTY-NOTICES.txt dist/
+          cd dist
+          sha256sum "三代目PDF職人.exe" > "三代目PDF職人.exe.sha256"
+          ls -l
+
+      - name: Create draft release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$RELEASE_TAG" dist/* \
+            --draft \
+            --target "$GITHUB_SHA" \
+            --title "三代目PDF職人 $RELEASE_TAG" \
+            --notes "## ダウンロード
+
+          \`三代目PDF職人.exe\` をダウンロードして、そのまま起動してください（インストール不要、Windows 10 / 11 の 64 ビット）。
+
+          - 署名していないため、初回は SmartScreen の警告が出ることがあります。「詳細情報」→「実行」で起動できます。
+          - 実行時にネットワークへは接続しません。
+          - \`三代目PDF職人.exe.sha256\` で、ダウンロードしたファイルの SHA-256 を確認できます。
+
+          第三者ソフトウェアのライセンスは THIRD-PARTY-NOTICES.txt を参照してください。"

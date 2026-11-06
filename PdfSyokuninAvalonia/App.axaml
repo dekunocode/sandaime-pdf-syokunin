@@ -1,0 +1,46 @@
+<Application x:Class="PdfSyokunin.App"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             RequestedThemeVariant="Dark">
+  <Application.Styles>
+    <FluentTheme DensityStyle="Compact" />
+    <Style Selector="Window">
+      <Setter Property="Background" Value="#202124" />
+      <Setter Property="Foreground" Value="#F2F2F4" />
+      <Setter Property="FontFamily" Value="Inter, Yu Gothic UI, Segoe UI" />
+      <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="Button.compact">
+      <Setter Property="MinHeight" Value="32" />
+      <Setter Property="Padding" Value="10,4" />
+      <Setter Property="Margin" Value="3" />
+    </Style>
+    <Style Selector="Button.primary">
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="MinWidth" Value="112" />
+      <Setter Property="Padding" Value="14,4" />
+      <Setter Property="Margin" Value="3" />
+      <Setter Property="Background" Value="#168BCC" />
+      <Setter Property="Foreground" Value="White" />
+    </Style>
+    <Style Selector="Button.tool">
+      <Setter Property="Width" Value="38" />
+      <Setter Property="Height" Value="38" />
+      <Setter Property="Padding" Value="5" />
+      <Setter Property="Margin" Value="1,0" />
+      <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets" />
+      <Setter Property="FontSize" Value="18" />
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Border.card">
+      <Setter Property="Background" Value="#292A2D" />
+      <Setter Property="BorderBrush" Value="#45464A" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="12" />
+    </Style>
+    <Style Selector="TextBlock.muted">
+      <Setter Property="Foreground" Value="#B7B7BD" />
+    </Style>
+  </Application.Styles>
+</Application>

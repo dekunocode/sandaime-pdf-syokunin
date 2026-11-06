@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="PdfSyokuninAvalonia/PdfSyokuninAvalonia.csproj" />
+  <Project Path="PdfSyokuninAvalonia.Tests/PdfSyokuninAvalonia.Tests.csproj" />
+</Solution>

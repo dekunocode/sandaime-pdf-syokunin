@@ -1,0 +1,30 @@
+<Window x:Class="PdfSyokunin.Views.MessageDialogWindow"
+        xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Width="430" SizeToContent="Height" MinHeight="180"
+        CanResize="False" ShowInTaskbar="False" WindowStartupLocation="CenterOwner">
+  <Window.Styles>
+    <!-- 左右のボタンで大きさと文字位置を揃え、並んだときのバランスを保つ。 -->
+    <Style Selector="Button.dialog">
+      <Setter Property="Width" Value="104" />
+      <Setter Property="Height" Value="34" />
+      <Setter Property="MinWidth" Value="0" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+  </Window.Styles>
+  <Grid Margin="22" RowDefinitions="Auto,*,Auto">
+    <TextBlock x:Name="TitleText" FontSize="18" FontWeight="SemiBold" />
+    <TextBlock x:Name="MessageText" Grid.Row="1" Margin="0,16,0,24"
+               TextWrapping="Wrap" MaxWidth="380" />
+    <StackPanel x:Name="ConfirmButtons" Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
+      <Button Classes="dialog" Content="いいえ" IsCancel="True" Click="No_OnClick" />
+      <Button Classes="primary dialog" Content="はい" IsDefault="True" Click="Yes_OnClick" />
+    </StackPanel>
+    <Button x:Name="OkButton" Grid.Row="2" Classes="primary dialog" Content="OK" IsDefault="True" IsCancel="True"
+            HorizontalAlignment="Right" Click="Ok_OnClick" />
+  </Grid>
+</Window>
