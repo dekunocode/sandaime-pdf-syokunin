@@ -58,15 +58,21 @@ jobs:
           version="${RELEASE_TAG#v}"
           dotnet publish PdfSyokuninAvalonia/PdfSyokuninAvalonia.csproj -c Release -p:Version="$version"
 
+      # GitHub Releases は添付ファイル名の日本語を消してしまう（「PDF.exe」になる）ため、
+      # 日本語名の exe は zip に入れて配る。zip の名前は英数字にする。
       - name: Collect release files
         shell: bash
         run: |
-          mkdir dist
-          cp "artifacts/publish/三代目PDF職人.exe" dist/
-          cp LICENSE dist/
-          cp PdfSyokuninAvalonia/THIRD-PARTY-NOTICES.txt dist/
-          cd dist
-          sha256sum "三代目PDF職人.exe" > "三代目PDF職人.exe.sha256"
+          zip_name="sandaime-pdf-syokunin-${RELEASE_TAG}-win-x64.zip"
+          mkdir -p package dist
+          cp "artifacts/publish/三代目PDF職人.exe" package/
+          cp LICENSE package/
+          cp PdfSyokuninAvalonia/THIRD-PARTY-NOTICES.txt package/
+          cd package
+          7z a -tzip -mcu=on "../dist/$zip_name" * > /dev/null
+          cd ../dist
+          sha256sum "$zip_name" > "$zip_name.sha256"
+          7z l "$zip_name"
           ls -l
 
       - name: Create draft release
@@ -80,10 +86,10 @@ jobs:
             --title "三代目PDF職人 $RELEASE_TAG" \
             --notes "## ダウンロード
 
-          \`三代目PDF職人.exe\` をダウンロードして、そのまま起動してください（インストール不要、Windows 10 / 11 の 64 ビット）。
+          \`sandaime-pdf-syokunin-${RELEASE_TAG}-win-x64.zip\` をダウンロードして展開し、中の \`三代目PDF職人.exe\` を起動してください（インストール不要、Windows 10 / 11 の 64 ビット）。
 
           - 署名していないため、初回は SmartScreen の警告が出ることがあります。「詳細情報」→「実行」で起動できます。
           - 実行時にネットワークへは接続しません。
-          - \`三代目PDF職人.exe.sha256\` で、ダウンロードしたファイルの SHA-256 を確認できます。
+          - \`.sha256\` のファイルで、ダウンロードした zip の SHA-256 を確認できます。
 
-          第三者ソフトウェアのライセンスは THIRD-PARTY-NOTICES.txt を参照してください。"
+          第三者ソフトウェアのライセンスは、zip 内の THIRD-PARTY-NOTICES.txt を参照してください。"
