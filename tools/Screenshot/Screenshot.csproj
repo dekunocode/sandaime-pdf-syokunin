@@ -2,7 +2,7 @@
   <!--
     README 用のスクリーンショットを撮るツール。
     画面を出さずに（Avalonia.Headless）、実際の描画エンジン（Skia）でメインウィンドウを描いて PNG に保存する。
-    使い方: dotnet run --project tools/Screenshot -- <出力先.png>
+    使い方: dotnet run (project: tools/Screenshot, 引数: 出力先の png)
   -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
