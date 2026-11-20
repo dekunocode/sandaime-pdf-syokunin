@@ -20,7 +20,10 @@ public sealed partial class LocalizationTests
         {
             var strings = Loc.LoadStrings(language.Code);
             var missing = japanese.Keys.Except(strings.Keys).ToArray();
-            var extra = strings.Keys.Except(japanese.Keys).ToArray();
+            // 「キー_One」は単数形を区別する言語だけが持つ追加の文言なので、元のキーがあれば許す。
+            var extra = strings.Keys.Except(japanese.Keys)
+                .Where(key => !IsSingularOf(key, japanese))
+                .ToArray();
             Assert.AreEqual(0, missing.Length, $"{language.Code} に足りないキー: {string.Join(", ", missing)}");
             Assert.AreEqual(0, extra.Length, $"{language.Code} に余分なキー: {string.Join(", ", extra)}");
 
@@ -32,7 +35,32 @@ public sealed partial class LocalizationTests
                     $"{language.Code} の {key} の {{0}} などの数が日本語と違います。");
                 Assert.IsFalse(string.IsNullOrWhiteSpace(strings[key]), $"{language.Code} の {key} が空です。");
             }
+
+            foreach (var key in strings.Keys.Where(key => IsSingularOf(key, japanese)))
+            {
+                var baseKey = key[..^Loc.SingularSuffix.Length];
+                Assert.AreEqual(
+                    Placeholders(japanese[baseKey]),
+                    Placeholders(strings[key]),
+                    $"{language.Code} の {key} の {{0}} などの数が {baseKey} と違います。");
+            }
         }
+    }
+
+    [TestMethod]
+    public void Format_数が1なら単数形の文言を使う()
+    {
+        Loc.Instance.SetLanguage("en");
+        Assert.AreEqual("1 page selected", Loc.Format("Selection_Header", 1));
+        Assert.AreEqual("2 pages selected", Loc.Format("Selection_Header", 2));
+        Assert.AreEqual("sample.pdf · 1 page", Loc.Format("Save_Summary", "sample.pdf", 1));
+
+        Loc.Instance.SetLanguage("es");
+        Assert.AreEqual("1 página seleccionada", Loc.Format("Selection_Header", 1));
+        Assert.AreEqual("3 páginas seleccionadas", Loc.Format("Selection_Header", 3));
+
+        Loc.Instance.SetLanguage("ja");
+        Assert.AreEqual("1ページを選択中", Loc.Format("Selection_Header", 1));
     }
 
     [TestMethod]
@@ -81,6 +109,10 @@ public sealed partial class LocalizationTests
 
         Directory.Delete(Path.GetDirectoryName(path)!, recursive: true);
     }
+
+    private static bool IsSingularOf(string key, IReadOnlyDictionary<string, string> japanese) =>
+        key.EndsWith(Loc.SingularSuffix, StringComparison.Ordinal)
+        && japanese.ContainsKey(key[..^Loc.SingularSuffix.Length]);
 
     private static object? Resource(string key) =>
         Application.Current!.TryGetResource(key, null, out var value) ? value : null;

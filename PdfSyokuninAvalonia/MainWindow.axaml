@@ -54,6 +54,13 @@
     <Style Selector="Button.task-card:pointerover /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="BorderBrush" Value="#48B5F5" />
     </Style>
+    <!-- 右パネルのボタンは幅が決まっているため、長い訳語は切らずに折り返す。 -->
+    <Style Selector="StackPanel.side-actions Button.compact /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="StackPanel.side-actions Grid > Button.compact">
+      <Setter Property="Padding" Value="6,4" />
+    </Style>
     <Style Selector="Button.mini">
       <Setter Property="Width" Value="24" />
       <Setter Property="Height" Value="22" />
@@ -382,7 +389,7 @@
       <Border Grid.Column="2" Background="#1C1D20" BorderBrush="#3A3B3F" BorderThickness="1,0,0,0">
         <Grid RowDefinitions="*,Auto">
           <ScrollViewer VerticalScrollBarVisibility="Auto">
-            <StackPanel Margin="9" Spacing="8">
+            <StackPanel Margin="9" Spacing="8" Classes="side-actions">
               <Border Classes="card" IsVisible="{Binding !HasSelection}">
                 <StackPanel Spacing="6">
                   <TextBlock Text="{DynamicResource Panel_NoSelection_Title}" FontWeight="SemiBold" />
@@ -407,7 +414,7 @@
                       <Button Content="{DynamicResource Panel_MovePrev}" Command="{Binding MovePreviousCommand}" Classes="compact" HorizontalAlignment="Stretch" ToolTip.Tip="Ctrl+←" />
                       <Button Grid.Column="1" Content="{DynamicResource Panel_MoveNext}" Command="{Binding MoveNextCommand}" Classes="compact" HorizontalAlignment="Stretch" ToolTip.Tip="Ctrl+→" />
                     </Grid>
-                    <Button Content="{DynamicResource Menu_Delete}" Command="{Binding DeleteSelectedCommand}" Classes="compact"
+                    <Button Content="{DynamicResource Panel_DeleteSelected}" Command="{Binding DeleteSelectedCommand}" Classes="compact"
                             HorizontalAlignment="Stretch" Foreground="#FF8A80" ToolTip.Tip="Delete" />
                   </StackPanel>
                 </Border>

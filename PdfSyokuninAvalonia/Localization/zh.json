@@ -153,6 +153,8 @@
   "Notify_MergedAt": "已将 {0} 个 PDF 合并到第 {1} 页的位置。",
   "Notify_RotatedLeft": "已将所选页面向左旋转。",
   "Notify_RotatedRight": "已将所选页面向右旋转。",
+  "Notify_PageRotatedLeft": "已将此页向左旋转。",
+  "Notify_PageRotatedRight": "已将此页向右旋转。",
   "Notify_SourceOrderChanged": "已更改 {0} 的合并顺序。",
   "Notify_SelectionMoved": "已移动所选页面。",
   "Notify_Cancelled": "已取消操作。",

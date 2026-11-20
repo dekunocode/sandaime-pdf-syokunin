@@ -61,7 +61,24 @@ public sealed partial class Loc : ObservableObject
         : key;
 
     public static string Format(string key, params object?[] args) =>
-        string.Format(CultureInfo.CurrentCulture, Get(key), args);
+        string.Format(CultureInfo.CurrentCulture, Get(PluralKey(key, args)), args);
+
+    /// <summary>
+    /// 英語やスペイン語の「1 page / 2 pages」に対応する。最初の整数が1で、いまの言語に「キー_One」があればそれを使う。
+    /// 単数と複数を区別しない言語（日本語・タイ語・中国語）は「_One」を持たないので、そのままのキーになる。
+    /// </summary>
+    private static string PluralKey(string key, object?[] args)
+    {
+        if (args.OfType<int>().Take(1).SingleOrDefault(-1) != 1)
+        {
+            return key;
+        }
+
+        var singular = key + SingularSuffix;
+        return Instance.current.ContainsKey(singular) ? singular : key;
+    }
+
+    public const string SingularSuffix = "_One";
 
     public void SetLanguage(string? code)
     {

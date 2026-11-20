@@ -1,4 +1,5 @@
 using Avalonia.Media.Imaging;
+using PdfSyokunin.Localization;
 using PdfSyokunin.Models;
 using PdfSyokunin.Services;
 using PdfSyokunin.ViewModels;
@@ -157,6 +158,7 @@ public sealed class MainViewModelTests
 
         viewModel.RotatePreviewRightCommand.Execute(null);
         Assert.AreEqual(90, viewModel.Pages[1].Rotation);
+        Assert.AreEqual(Loc.Get("Notify_PageRotatedRight"), viewModel.NotificationMessage);
 
         viewModel.UndoCommand.Execute(null);
         Assert.AreEqual(0, viewModel.Pages[1].Rotation);

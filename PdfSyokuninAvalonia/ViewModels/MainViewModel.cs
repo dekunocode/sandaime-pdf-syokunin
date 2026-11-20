@@ -701,7 +701,8 @@ public partial class MainViewModel : ObservableObject
 
         PushUndoSnapshot();
         page.Rotation = ((page.Rotation + angle) % 360 + 360) % 360;
-        CompleteEdit(angle < 0 ? Loc.Get("Notify_RotatedLeft") : Loc.Get("Notify_RotatedRight"));
+        // プレビューで回すのは表示中の1ページだけなので、「選択ページ」ではなく「このページ」と知らせる。
+        CompleteEdit(angle < 0 ? Loc.Get("Notify_PageRotatedLeft") : Loc.Get("Notify_PageRotatedRight"));
     }
 
     private async void ShowPreviewPage(EditablePdfPage page)

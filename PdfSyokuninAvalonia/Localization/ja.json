@@ -153,6 +153,8 @@
   "Notify_MergedAt": "{0}個のPDFを{1}ページ目の位置へ結合しました。",
   "Notify_RotatedLeft": "選択ページを左へ回転しました。",
   "Notify_RotatedRight": "選択ページを右へ回転しました。",
+  "Notify_PageRotatedLeft": "このページを左へ回転しました。",
+  "Notify_PageRotatedRight": "このページを右へ回転しました。",
   "Notify_SourceOrderChanged": "{0}の結合順を変更しました。",
   "Notify_SelectionMoved": "選択ページを移動しました。",
   "Notify_Cancelled": "処理をキャンセルしました。",

@@ -153,6 +153,8 @@
   "Notify_MergedAt": "รวม PDF {0} ไฟล์ที่ตำแหน่งหน้า {1} แล้ว",
   "Notify_RotatedLeft": "หมุนหน้าที่เลือกไปทางซ้ายแล้ว",
   "Notify_RotatedRight": "หมุนหน้าที่เลือกไปทางขวาแล้ว",
+  "Notify_PageRotatedLeft": "หมุนหน้านี้ไปทางซ้ายแล้ว",
+  "Notify_PageRotatedRight": "หมุนหน้านี้ไปทางขวาแล้ว",
   "Notify_SourceOrderChanged": "เปลี่ยนลำดับการรวมของ {0} แล้ว",
   "Notify_SelectionMoved": "ย้ายหน้าที่เลือกแล้ว",
   "Notify_Cancelled": "ยกเลิกการดำเนินการแล้ว",
