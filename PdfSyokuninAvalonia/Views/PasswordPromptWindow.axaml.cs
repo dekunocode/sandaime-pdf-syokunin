@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
+using PdfSyokunin.Localization;
 
 namespace PdfSyokunin.Views;
 
@@ -13,7 +14,7 @@ public partial class PasswordPromptWindow : Window
     {
         InitializeComponent();
         this.FindControl<TextBlock>("FileNameText")!.Text = fileName;
-        this.FindControl<TextBlock>("ValidationText")!.Text = isRetry ? "パスワードが正しくありません。もう一度入力してください。" : string.Empty;
+        this.FindControl<TextBlock>("ValidationText")!.Text = isRetry ? Loc.Get("Password_Retry") : string.Empty;
         Opened += (_, _) => this.FindControl<TextBox>("PasswordInput")!.Focus();
     }
 
@@ -42,7 +43,7 @@ public partial class PasswordPromptWindow : Window
         var password = this.FindControl<TextBox>("PasswordInput")!.Text;
         if (string.IsNullOrEmpty(password))
         {
-            this.FindControl<TextBlock>("ValidationText")!.Text = "パスワードを入力してください。";
+            this.FindControl<TextBlock>("ValidationText")!.Text = Loc.Get("Password_Empty");
             return;
         }
 

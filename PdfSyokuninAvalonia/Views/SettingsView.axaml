@@ -7,13 +7,13 @@
         <Grid ColumnDefinitions="48,*">
           <TextBlock Text="" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="28" Foreground="#43C6F5" VerticalAlignment="Center" />
           <StackPanel Grid.Column="1" Spacing="4">
-            <TextBlock Text="主要ライブラリ" FontWeight="SemiBold" />
+            <TextBlock Text="{DynamicResource Settings_Libraries}" FontWeight="SemiBold" />
             <TextBlock Text="{Binding LibraryDescription}" Classes="muted" TextWrapping="Wrap" />
-            <TextBlock Text="詳細な著作権表示は下のライセンス情報から確認できます。" FontSize="11" TextWrapping="Wrap" />
+            <TextBlock Text="{DynamicResource Settings_LibrariesNote}" FontSize="11" TextWrapping="Wrap" />
           </StackPanel>
         </Grid>
       </Border>
-      <Expander Header="サードパーティーライセンス情報">
+      <Expander Header="{DynamicResource Settings_Licenses}">
         <TextBox Text="{Binding ThirdPartyNotices, Mode=OneWay}" IsReadOnly="True" AcceptsReturn="True"
                  TextWrapping="Wrap" MaxHeight="240" FontFamily="Consolas" FontSize="10" />
       </Expander>

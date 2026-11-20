@@ -14,7 +14,7 @@ public interface IDialogService
 
     void ShowWarning(string message);
 
-    Task<bool> ConfirmAsync(string message, string title = "確認");
+    Task<bool> ConfirmAsync(string message, string? title = null);
 
     Task<string?> RequestPdfPasswordAsync(string fileName, bool isRetry);
 }

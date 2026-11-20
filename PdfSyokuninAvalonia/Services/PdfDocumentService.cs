@@ -1,3 +1,4 @@
+using PdfSyokunin.Localization;
 using PdfSharp.Pdf;
 using PdfSharp.Pdf.IO;
 using PdfSyokunin.Models;
@@ -78,7 +79,7 @@ public sealed class PdfDocumentService : IPdfDocumentService
             using var source = OpenFromMemory(inputPath);
             if (pageOrder.Count == 0)
             {
-                throw new InvalidOperationException("保存するページがありません。");
+                throw new InvalidOperationException(Loc.Get("Error_NoPagesToSave"));
             }
 
             using var output = new PdfDocument();
@@ -127,7 +128,7 @@ public sealed class PdfDocumentService : IPdfDocumentService
         {
             if (pages.Count == 0)
             {
-                throw new InvalidOperationException("保存するページがありません。");
+                throw new InvalidOperationException(Loc.Get("Error_NoPagesToSave"));
             }
 
             var sources = new Dictionary<string, PdfDocument>(StringComparer.OrdinalIgnoreCase);

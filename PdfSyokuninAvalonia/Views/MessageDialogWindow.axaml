@@ -21,10 +21,10 @@
     <TextBlock x:Name="MessageText" Grid.Row="1" Margin="0,16,0,24"
                TextWrapping="Wrap" MaxWidth="380" />
     <StackPanel x:Name="ConfirmButtons" Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
-      <Button Classes="dialog" Content="いいえ" IsCancel="True" Click="No_OnClick" />
-      <Button Classes="primary dialog" Content="はい" IsDefault="True" Click="Yes_OnClick" />
+      <Button Classes="dialog" Content="{DynamicResource Dialog_No}" IsCancel="True" Click="No_OnClick" />
+      <Button Classes="primary dialog" Content="{DynamicResource Dialog_Yes}" IsDefault="True" Click="Yes_OnClick" />
     </StackPanel>
-    <Button x:Name="OkButton" Grid.Row="2" Classes="primary dialog" Content="OK" IsDefault="True" IsCancel="True"
+    <Button x:Name="OkButton" Grid.Row="2" Classes="primary dialog" Content="{DynamicResource Dialog_Ok}" IsDefault="True" IsCancel="True"
             HorizontalAlignment="Right" Click="Ok_OnClick" />
   </Grid>
 </Window>

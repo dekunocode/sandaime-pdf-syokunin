@@ -134,8 +134,62 @@ public sealed class MainViewModelTests
         Assert.IsTrue(viewModel.SaveAllPages);
     }
 
+    [TestMethod]
+    public async Task OpenPreview_ページ送りと回転ができ_元に戻してもプレビューは閉じない()
+    {
+        var viewModel = CreateViewModel();
+        await viewModel.AcceptFilesCommand.ExecuteAsync([CreatePdf("a", 2)]);
+
+        viewModel.OpenPreviewCommand.Execute(viewModel.Pages[0]);
+
+        Assert.IsTrue(viewModel.IsPreviewOpen);
+        Assert.AreSame(viewModel.Pages[0].Thumbnail, viewModel.PreviewImage);
+        Assert.IsFalse(viewModel.CanPreviewPrevious);
+        Assert.IsTrue(viewModel.CanPreviewNext);
+
+        // プレビュー中はDeleteキーなどで背後のページを変更しない。
+        viewModel.Pages[0].IsSelected = true;
+        Assert.IsFalse(viewModel.DeleteSelectedCommand.CanExecute(null));
+
+        viewModel.PreviewNextCommand.Execute(null);
+        Assert.AreSame(viewModel.Pages[1], viewModel.PreviewPage);
+        Assert.IsFalse(viewModel.CanPreviewNext);
+
+        viewModel.RotatePreviewRightCommand.Execute(null);
+        Assert.AreEqual(90, viewModel.Pages[1].Rotation);
+
+        viewModel.UndoCommand.Execute(null);
+        Assert.AreEqual(0, viewModel.Pages[1].Rotation);
+        Assert.IsTrue(viewModel.IsPreviewOpen);
+        Assert.AreSame(viewModel.Pages[1], viewModel.PreviewPage);
+
+        viewModel.EscapeCommand.Execute(null);
+        Assert.IsFalse(viewModel.IsPreviewOpen);
+        Assert.IsNull(viewModel.PreviewPage);
+    }
+
+    [TestMethod]
+    public async Task OpenPreview_表示中のページがなくなると閉じる()
+    {
+        var viewModel = CreateViewModel();
+        await viewModel.AcceptFilesCommand.ExecuteAsync([CreatePdf("a", 1), CreatePdf("b", 1)]);
+        viewModel.OpenPreviewCommand.Execute(viewModel.Pages[1]);
+
+        viewModel.RemoveSourceCommand.Execute(viewModel.SourceFiles[1]);
+
+        Assert.IsFalse(viewModel.IsPreviewOpen);
+    }
+
     private MainViewModel CreateViewModel() =>
-        new(new FakeDialogService(), new PdfDocumentService(), new PdfExtractionService(), new FakeThumbnailService(), new FakeRecentFilesService());
+        new(new FakeDialogService(), new PdfDocumentService(), new PdfExtractionService(), new FakeThumbnailService(), new FakeRecentFilesService(),
+            new PendingPageRenderer());
+
+    // 高解像度の描画は終わらないものとし、サムネイルでの表示とページ送りだけを確かめる。
+    private sealed class PendingPageRenderer : IPdfPageRenderer
+    {
+        public Task<Bitmap> RenderAsync(string inputPath, int pageIndex, string? password, int width, CancellationToken cancellationToken = default) =>
+            new TaskCompletionSource<Bitmap>().Task;
+    }
 
     private string CreatePdf(string name, int pageCount)
     {
@@ -191,7 +245,7 @@ public sealed class MainViewModelTests
 
         public void ShowWarning(string message) => Assert.Fail(message);
 
-        public Task<bool> ConfirmAsync(string message, string title = "確認") => Task.FromResult(true);
+        public Task<bool> ConfirmAsync(string message, string? title = null) => Task.FromResult(true);
 
         public Task<string?> RequestPdfPasswordAsync(string fileName, bool isRetry) => Task.FromResult<string?>(null);
     }

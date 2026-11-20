@@ -35,6 +35,8 @@
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
     <EmbeddedResource Include="THIRD-PARTY-NOTICES.txt" />
+    <!-- 表示言語ごとの文言。ファイル名の ja/en/th/es/zh が言語コード。 -->
+    <EmbeddedResource Include="Localization\*.json" WithCulture="false" LogicalName="PdfSyokunin.Localization.%(Filename).json" />
   </ItemGroup>
 
   <ItemGroup>
