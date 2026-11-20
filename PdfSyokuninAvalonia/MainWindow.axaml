@@ -2,6 +2,7 @@
         xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:PdfSyokunin.Views"
+        xmlns:loc="clr-namespace:PdfSyokunin.Localization"
         Title="三代目PDF職人" Width="1120" Height="660"
         MinWidth="860" MinHeight="560" WindowStartupLocation="CenterScreen"
         Icon="/Assets/app-icon.ico">
@@ -53,6 +54,13 @@
     <Style Selector="Button.task-card:pointerover /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="BorderBrush" Value="#48B5F5" />
     </Style>
+    <!-- 右パネルのボタンは幅が決まっているため、長い訳語は切らずに折り返す。 -->
+    <Style Selector="StackPanel.side-actions Button.compact /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="StackPanel.side-actions Grid > Button.compact">
+      <Setter Property="Padding" Value="6,4" />
+    </Style>
     <Style Selector="Button.mini">
       <Setter Property="Width" Value="24" />
       <Setter Property="Height" Value="22" />
@@ -78,32 +86,43 @@
           <Image Source="/Assets/app-icon.png" Width="30" Height="30" />
           <StackPanel Margin="9,0,0,0" VerticalAlignment="Center">
             <TextBlock Text="三代目PDF職人" FontSize="15" FontWeight="SemiBold" />
-            <TextBlock Text="PDFワークスペース" FontSize="9" Classes="muted" />
+            <TextBlock Text="{DynamicResource Header_Subtitle}" FontSize="9" Classes="muted" />
           </StackPanel>
         </StackPanel>
         <TextBlock Grid.Column="1" Text="{Binding WorkspaceTitle}" FontSize="14" FontWeight="SemiBold"
                    VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="8,0" />
         <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-          <Button Classes="tool" Command="{Binding NewWorkspaceCommand}" ToolTip.Tip="新しいワークスペース（最初の画面へ戻る）">
+          <Button Classes="tool" Command="{Binding NewWorkspaceCommand}" ToolTip.Tip="{DynamicResource Tip_NewWorkspace}">
             <PathIcon Width="20" Height="20"
                       Data="M14,2H6C4.9,2 4,2.9 4,4V20C4,21.1 4.9,22 6,22H18C19.1,22 20,21.1 20,20V8L14,2M13,4L18,9H13V4M6,4H11V11H18V20H6V4Z" />
           </Button>
-          <Button Classes="tool" Command="{Binding AddFilesCommand}" ToolTip.Tip="PDFを追加して結合 (Ctrl+O)">
+          <Button Classes="tool" Command="{Binding AddFilesCommand}" ToolTip.Tip="{DynamicResource Tip_AddFiles}">
             <PathIcon Width="20" Height="20"
                       Data="M20,6H12L10,4H4C2.9,4 2,4.9 2,6V18C2,19.1 2.9,20 4,20H20C21.1,20 22,19.1 22,18V8C22,6.9 21.1,6 20,6M20,18H4V8H20V18M13,9H11V12H8V14H11V17H13V14H16V12H13V9Z" />
           </Button>
           <Separator Margin="4,9" />
-          <Button Classes="tool" Command="{Binding UndoCommand}" IsEnabled="{Binding CanUndo}" ToolTip.Tip="元に戻す (Ctrl+Z)">
+          <Button Classes="tool" Command="{Binding UndoCommand}" IsEnabled="{Binding CanUndo}" ToolTip.Tip="{DynamicResource Tip_Undo}">
             <PathIcon Width="20" Height="20"
                       Data="M12.5,8C9.85,8 7.45,9 5.6,10.6L2,7V16H11L7.62,12.62C8.97,11.62 10.65,11 12.5,11C15.65,11 18.34,13.07 19.25,16L22.16,15.04C20.84,10.96 17.03,8 12.5,8Z" />
           </Button>
-          <Button Classes="tool" Command="{Binding RedoCommand}" IsEnabled="{Binding CanRedo}" ToolTip.Tip="やり直す (Ctrl+Y)">
+          <Button Classes="tool" Command="{Binding RedoCommand}" IsEnabled="{Binding CanRedo}" ToolTip.Tip="{DynamicResource Tip_Redo}">
             <PathIcon Width="20" Height="20"
                       Data="M11.5,8C14.15,8 16.55,9 18.4,10.6L22,7V16H13L16.38,12.62C15.03,11.62 13.35,11 11.5,11C8.35,11 5.66,13.07 4.75,16L1.84,15.04C3.16,10.96 6.97,8 11.5,8Z" />
           </Button>
-          <Button Classes="tool" Content="&#xE105;" Command="{Binding OpenSavePanelCommand}" IsEnabled="{Binding CanEdit}" ToolTip.Tip="保存 (Ctrl+S)" />
+          <Button Classes="tool" Content="&#xE105;" Command="{Binding OpenSavePanelCommand}" IsEnabled="{Binding CanEdit}" ToolTip.Tip="{DynamicResource Tip_Save}" />
           <Separator Margin="4,9" />
-          <Button Classes="tool" Content="&#xE946;" Command="{Binding OpenInfoCommand}" ToolTip.Tip="アプリ情報" />
+          <!-- 表示言語。選んだ瞬間に画面全体の文言が切り替わる。 -->
+          <TextBlock Classes="glyph" Text="&#xE774;" FontSize="16" VerticalAlignment="Center" Margin="4,0,6,0"
+                     ToolTip.Tip="{DynamicResource Tip_Language}" />
+          <ComboBox ItemsSource="{Binding Settings.Languages}" SelectedItem="{Binding Settings.SelectedLanguage, Mode=TwoWay}"
+                    MinWidth="112" VerticalAlignment="Center" ToolTip.Tip="{DynamicResource Tip_Language}">
+            <ComboBox.ItemTemplate>
+              <DataTemplate>
+                <TextBlock Text="{Binding NativeName}" />
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <Button Classes="tool" Content="&#xE946;" Command="{Binding OpenInfoCommand}" ToolTip.Tip="{DynamicResource Tip_AppInfo}" Margin="4,0,0,0" />
         </StackPanel>
       </Grid>
     </Border>
@@ -114,8 +133,8 @@
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="14">
           <Image Source="/Assets/app-icon.png" Width="56" Height="56" />
           <StackPanel VerticalAlignment="Center">
-            <TextBlock Text="何をしますか？" FontSize="24" FontWeight="SemiBold" />
-            <TextBlock Text="作業を選ぶとPDFを開きます。どの作業から始めても、あとで他の操作もできます。" Classes="muted" />
+            <TextBlock Text="{DynamicResource Start_Title}" FontSize="24" FontWeight="SemiBold" />
+            <TextBlock Text="{DynamicResource Start_Subtitle}" Classes="muted" TextWrapping="Wrap" MaxWidth="620" />
           </StackPanel>
         </StackPanel>
 
@@ -123,29 +142,29 @@
           <Button Classes="task-card" Command="{Binding StartTaskCommand}" CommandParameter="Merge">
             <StackPanel Spacing="6">
               <TextBlock Classes="glyph" Text="&#xE8F1;" FontSize="26" Foreground="#48B5F5" />
-              <TextBlock Text="PDFを結合" FontSize="14" FontWeight="SemiBold" />
-              <TextBlock Text="複数のPDFを好きな順番で1つにまとめる" FontSize="10" Classes="muted" TextWrapping="Wrap" />
+              <TextBlock Text="{DynamicResource Task_Merge_Title}" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap" />
+              <TextBlock Text="{DynamicResource Task_Merge_Desc}" FontSize="10" Classes="muted" TextWrapping="Wrap" />
             </StackPanel>
           </Button>
           <Button Classes="task-card" Command="{Binding StartTaskCommand}" CommandParameter="Organize">
             <StackPanel Spacing="6">
               <TextBlock Classes="glyph" Text="&#xE7AD;" FontSize="26" Foreground="#5CD08B" />
-              <TextBlock Text="ページを整理" FontSize="14" FontWeight="SemiBold" />
-              <TextBlock Text="回転・並べ替え・不要なページの削除" FontSize="10" Classes="muted" TextWrapping="Wrap" />
+              <TextBlock Text="{DynamicResource Task_Organize_Title}" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap" />
+              <TextBlock Text="{DynamicResource Task_Organize_Desc}" FontSize="10" Classes="muted" TextWrapping="Wrap" />
             </StackPanel>
           </Button>
           <Button Classes="task-card" Command="{Binding StartTaskCommand}" CommandParameter="Extract">
             <StackPanel Spacing="6">
               <TextBlock Classes="glyph" Text="&#xE8C8;" FontSize="26" Foreground="#F5A524" />
-              <TextBlock Text="抜き出す" FontSize="14" FontWeight="SemiBold" />
-              <TextBlock Text="一部のページ・テキスト・画像を取り出す" FontSize="10" Classes="muted" TextWrapping="Wrap" />
+              <TextBlock Text="{DynamicResource Task_Extract_Title}" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap" />
+              <TextBlock Text="{DynamicResource Task_Extract_Desc}" FontSize="10" Classes="muted" TextWrapping="Wrap" />
             </StackPanel>
           </Button>
           <Button Classes="task-card" Command="{Binding StartTaskCommand}" CommandParameter="Protect">
             <StackPanel Spacing="6">
               <TextBlock Classes="glyph" Text="&#xE72E;" FontSize="26" Foreground="#E879B9" />
-              <TextBlock Text="パスワード" FontSize="14" FontWeight="SemiBold" />
-              <TextBlock Text="パスワードを設定する・解除する" FontSize="10" Classes="muted" TextWrapping="Wrap" />
+              <TextBlock Text="{DynamicResource Task_Protect_Title}" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap" />
+              <TextBlock Text="{DynamicResource Task_Protect_Desc}" FontSize="10" Classes="muted" TextWrapping="Wrap" />
             </StackPanel>
           </Button>
         </UniformGrid>
@@ -155,20 +174,20 @@
           <Grid ColumnDefinitions="60,*,Auto">
             <TextBlock Classes="glyph" Text="&#xE896;" FontSize="34" Foreground="#48B5F5" VerticalAlignment="Center" />
             <StackPanel Grid.Column="1" VerticalAlignment="Center">
-              <TextBlock Text="またはPDFをここへドロップ" FontSize="16" FontWeight="SemiBold" />
-              <TextBlock Text="複数のファイルをまとめてドロップすると、そのまま結合の準備ができます" FontSize="11" Margin="0,4,0,0" Classes="muted" />
+              <TextBlock Text="{DynamicResource Drop_Title}" FontSize="16" FontWeight="SemiBold" />
+              <TextBlock Text="{DynamicResource Drop_Desc}" FontSize="11" Margin="0,4,0,0" Classes="muted" TextWrapping="Wrap" />
             </StackPanel>
-            <Button Grid.Column="2" Content="ファイルを選択" Command="{Binding AddFilesCommand}" Classes="primary" VerticalAlignment="Center" />
+            <Button Grid.Column="2" Content="{DynamicResource Drop_SelectFiles}" Command="{Binding AddFilesCommand}" Classes="primary" VerticalAlignment="Center" />
           </Grid>
         </Border>
 
         <StackPanel Margin="5,0">
           <Grid ColumnDefinitions="*,Auto">
-            <TextBlock Text="最近使ったファイル" FontWeight="SemiBold" VerticalAlignment="Center" />
-            <Button Grid.Column="1" Content="履歴を消去" Command="{Binding ClearRecentFilesCommand}" Classes="compact"
+            <TextBlock Text="{DynamicResource Recent_Title}" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Content="{DynamicResource Recent_Clear}" Command="{Binding ClearRecentFilesCommand}" Classes="compact"
                     FontSize="10" IsVisible="{Binding HasRecentFiles}" />
           </Grid>
-          <TextBlock Text="まだありません" FontSize="11" Classes="muted" Margin="0,6,0,0" IsVisible="{Binding !HasRecentFiles}" />
+          <TextBlock Text="{DynamicResource Recent_Empty}" FontSize="11" Classes="muted" Margin="0,6,0,0" IsVisible="{Binding !HasRecentFiles}" />
           <ItemsControl ItemsSource="{Binding RecentFiles}" Margin="0,5,0,0">
             <ItemsControl.ItemTemplate>
               <DataTemplate>
@@ -184,7 +203,7 @@
                       <TextBlock Grid.Column="2" Classes="glyph" Text="&#xE76C;" VerticalAlignment="Center" />
                     </Grid>
                   </Button>
-                  <Button Grid.Column="1" Content="×" ToolTip.Tip="履歴から削除"
+                  <Button Grid.Column="1" Content="×" ToolTip.Tip="{DynamicResource Recent_RemoveTip}"
                           Command="{Binding DataContext.RemoveRecentFileCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                           CommandParameter="{Binding}" Classes="compact" Width="32" Padding="4" />
                 </Grid>
@@ -199,8 +218,8 @@
       <!-- 左：結合するファイルの一覧。上から順に1つのPDFになる。 -->
       <Border Background="#1C1D20" BorderBrush="#3A3B3F" BorderThickness="0,0,1,0">
         <Grid Margin="9" RowDefinitions="Auto,Auto,*,Auto">
-          <TextBlock Text="結合するPDF" FontWeight="SemiBold" Margin="4,3,0,0" />
-          <TextBlock Grid.Row="1" Text="上から順に1つのPDFになります。↑↓で順番を変更できます。" FontSize="10"
+          <TextBlock Text="{DynamicResource Sources_Title}" FontWeight="SemiBold" Margin="4,3,0,0" />
+          <TextBlock Grid.Row="1" Text="{DynamicResource Sources_Hint}" FontSize="10"
                      Classes="muted" TextWrapping="Wrap" Margin="4,3,0,9" />
           <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
             <ItemsControl ItemsSource="{Binding SourceFiles}">
@@ -215,16 +234,23 @@
                       </Border>
                       <TextBlock Grid.Column="1" Text="{Binding FileName}" FontSize="11" FontWeight="SemiBold"
                                  TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding FullPath}" VerticalAlignment="Center" />
-                      <Button Grid.Column="2" Content="×" Classes="mini" ToolTip.Tip="このPDFを外す"
+                      <Button Grid.Column="2" Content="×" Classes="mini" ToolTip.Tip="{DynamicResource Sources_RemoveTip}"
                               Command="{Binding DataContext.RemoveSourceCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                               CommandParameter="{Binding}" HorizontalAlignment="Right" />
-                      <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding PageCount, StringFormat={}{0}ページ}" FontSize="9"
-                                 Classes="muted" VerticalAlignment="Center" />
+                      <TextBlock Grid.Row="1" Grid.Column="1" FontSize="9"
+                                 Classes="muted" VerticalAlignment="Center">
+                        <TextBlock.Text>
+                          <MultiBinding Converter="{x:Static loc:LocFormatConverter.Instance}" ConverterParameter="Sources_PageCount">
+                            <Binding Path="PageCount" />
+                            <Binding Path="Version" Source="{x:Static loc:Loc.Instance}" />
+                          </MultiBinding>
+                        </TextBlock.Text>
+                      </TextBlock>
                       <StackPanel Grid.Row="1" Grid.Column="2" Orientation="Horizontal" Margin="0,4,0,0">
-                        <Button Content="↑" Classes="mini" ToolTip.Tip="前へ（先に結合）" IsEnabled="{Binding CanMoveUp}"
+                        <Button Content="↑" Classes="mini" ToolTip.Tip="{DynamicResource Sources_MoveUpTip}" IsEnabled="{Binding CanMoveUp}"
                                 Command="{Binding DataContext.MoveSourceUpCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                 CommandParameter="{Binding}" />
-                        <Button Content="↓" Classes="mini" ToolTip.Tip="後ろへ（後に結合）" IsEnabled="{Binding CanMoveDown}"
+                        <Button Content="↓" Classes="mini" ToolTip.Tip="{DynamicResource Sources_MoveDownTip}" IsEnabled="{Binding CanMoveDown}"
                                 Command="{Binding DataContext.MoveSourceDownCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                 CommandParameter="{Binding}" />
                       </StackPanel>
@@ -234,22 +260,22 @@
               </ItemsControl.ItemTemplate>
             </ItemsControl>
           </ScrollViewer>
-          <Button Grid.Row="3" Content="＋ PDFを追加して結合" Command="{Binding AddFilesCommand}" Classes="primary"
+          <Button Grid.Row="3" Content="{DynamicResource Sources_AddButton}" Command="{Binding AddFilesCommand}" Classes="primary"
                   HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                  ToolTip.Tip="末尾に結合されます。ページの間にドロップすると、その位置に挿入されます。" />
+                  ToolTip.Tip="{DynamicResource Sources_AddTip}" />
         </Grid>
       </Border>
 
       <Grid Grid.Column="1" RowDefinitions="42,Auto,*">
         <Border Background="#242528" BorderBrush="#3A3B3F" BorderThickness="0,0,0,1">
           <Grid Margin="9,0" ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto">
-            <Button Content="全選択" Command="{Binding SelectAllCommand}" Classes="compact" ToolTip.Tip="Ctrl+A" />
-            <Button Grid.Column="1" Content="選択解除" Command="{Binding ClearSelectionCommand}" Classes="compact" ToolTip.Tip="Esc" />
-            <TextBlock Grid.Column="2" Text="クリックで選択・Ctrl／Shiftで複数選択・ドラッグで並べ替え" FontSize="10" Classes="muted"
+            <Button Content="{DynamicResource Toolbar_SelectAll}" Command="{Binding SelectAllCommand}" Classes="compact" ToolTip.Tip="Ctrl+A" />
+            <Button Grid.Column="1" Content="{DynamicResource Toolbar_ClearSelection}" Command="{Binding ClearSelectionCommand}" Classes="compact" ToolTip.Tip="Esc" />
+            <TextBlock Grid.Column="2" Text="{DynamicResource Toolbar_Hint}" FontSize="10" Classes="muted"
                        VerticalAlignment="Center" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="6,0" />
-            <Button Grid.Column="3" Content="−" Command="{Binding ZoomOutCommand}" Classes="compact" MinWidth="32" ToolTip.Tip="縮小（Ctrl＋ホイール）" />
-            <Button Grid.Column="4" Content="{Binding ZoomText}" Command="{Binding ResetZoomCommand}" Classes="compact" MinWidth="60" ToolTip.Tip="100%に戻す" />
-            <Button Grid.Column="5" Content="＋" Command="{Binding ZoomInCommand}" Classes="compact" MinWidth="32" ToolTip.Tip="拡大（Ctrl＋ホイール）" />
+            <Button Grid.Column="3" Content="−" Command="{Binding ZoomOutCommand}" Classes="compact" MinWidth="32" ToolTip.Tip="{DynamicResource Tip_ZoomOut}" />
+            <Button Grid.Column="4" Content="{Binding ZoomText}" Command="{Binding ResetZoomCommand}" Classes="compact" MinWidth="60" ToolTip.Tip="{DynamicResource Tip_ZoomReset}" />
+            <Button Grid.Column="5" Content="＋" Command="{Binding ZoomInCommand}" Classes="compact" MinWidth="32" ToolTip.Tip="{DynamicResource Tip_ZoomIn}" />
           </Grid>
         </Border>
 
@@ -262,7 +288,7 @@
               <TextBlock Text="{Binding GuideText}" FontSize="11" TextWrapping="Wrap" Foreground="#D5E6F2" />
             </StackPanel>
             <Button Grid.Column="2" Content="×" Classes="mini" VerticalAlignment="Top" Margin="8,0,0,0"
-                    Command="{Binding DismissGuideCommand}" ToolTip.Tip="案内を閉じる" />
+                    Command="{Binding DismissGuideCommand}" ToolTip.Tip="{DynamicResource Guide_CloseTip}" />
           </Grid>
         </Border>
 
@@ -285,24 +311,33 @@
                   <Border Classes="card page-card" Classes.dragging="{Binding IsDragging}" Cursor="Hand">
                     <Border.ContextMenu>
                       <ContextMenu>
-                        <MenuItem Header="右に回転" Tag="rotate-right" InputGesture="Ctrl+R" Click="PageMenu_OnClick" />
-                        <MenuItem Header="左に回転" Tag="rotate-left" InputGesture="Ctrl+L" Click="PageMenu_OnClick" />
+                        <MenuItem Header="{DynamicResource Menu_Preview}" Tag="preview" InputGesture="Space" Click="PageMenu_OnClick" />
                         <Separator />
-                        <MenuItem Header="この前にPDFを挿入…" Tag="insert-before" Click="PageMenu_OnClick" />
-                        <MenuItem Header="この後ろにPDFを挿入…" Tag="insert-after" Click="PageMenu_OnClick" />
+                        <MenuItem Header="{DynamicResource Menu_RotateRight}" Tag="rotate-right" InputGesture="Ctrl+R" Click="PageMenu_OnClick" />
+                        <MenuItem Header="{DynamicResource Menu_RotateLeft}" Tag="rotate-left" InputGesture="Ctrl+L" Click="PageMenu_OnClick" />
                         <Separator />
-                        <MenuItem Header="選択ページをPDFとして保存…" Tag="export" Click="PageMenu_OnClick" />
-                        <MenuItem Header="選択ページを削除" Tag="delete" InputGesture="Delete" Click="PageMenu_OnClick" />
+                        <MenuItem Header="{DynamicResource Menu_InsertBefore}" Tag="insert-before" Click="PageMenu_OnClick" />
+                        <MenuItem Header="{DynamicResource Menu_InsertAfter}" Tag="insert-after" Click="PageMenu_OnClick" />
+                        <Separator />
+                        <MenuItem Header="{DynamicResource Menu_Export}" Tag="export" Click="PageMenu_OnClick" />
+                        <MenuItem Header="{DynamicResource Menu_Delete}" Tag="delete" InputGesture="Delete" Click="PageMenu_OnClick" />
                       </ContextMenu>
                     </Border.ContextMenu>
                     <Grid RowDefinitions="Auto,Auto,Auto,Auto">
                       <Border Height="4" CornerRadius="2" Margin="0,0,0,7" Background="{Binding SourceBrush}" />
                       <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto">
-                        <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" VerticalAlignment="Center" ToolTip.Tip="選択に追加・解除" />
-                        <TextBlock Grid.Column="1" Text="{Binding DisplayNumber, StringFormat={}{0}ページ目}" FontWeight="SemiBold"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" VerticalAlignment="Center" ToolTip.Tip="{DynamicResource Page_SelectTip}" />
+                        <TextBlock Grid.Column="1" FontWeight="SemiBold"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <TextBlock.Text>
+                          <MultiBinding Converter="{x:Static loc:LocFormatConverter.Instance}" ConverterParameter="Page_Number">
+                            <Binding Path="DisplayNumber" />
+                            <Binding Path="Version" Source="{x:Static loc:Loc.Instance}" />
+                          </MultiBinding>
+                        </TextBlock.Text>
+                      </TextBlock>
                         <PathIcon Grid.Column="2" Width="14" Height="14" Foreground="#B7B7BD" VerticalAlignment="Center"
-                                  ToolTip.Tip="カードをドラッグして移動"
+                                  ToolTip.Tip="{DynamicResource Page_DragTip}"
                                   Data="M7,19V17H9V19H7M11,19V17H13V19H11M15,19V17H17V19H15M7,15V13H9V15H7M11,15V13H13V15H11M15,15V13H17V15H15M7,11V9H9V11H7M11,11V9H13V11H11M15,11V9H17V11H15M7,7V5H9V7H7M11,7V5H13V7H11M15,7V5H17V7H15Z" />
                       </Grid>
                       <Border Grid.Row="2" Margin="0,7" Background="White" ClipToBounds="True"
@@ -315,7 +350,14 @@
                         <Ellipse Width="7" Height="7" Fill="{Binding SourceBrush}" VerticalAlignment="Center" Margin="0,0,4,0" />
                         <TextBlock Grid.Column="1" Text="{Binding SourceFileName}" FontSize="9" Classes="muted"
                                    TextTrimming="CharacterEllipsis" MaxWidth="96" ToolTip.Tip="{Binding SourceFileName}" />
-                        <TextBlock Grid.Column="2" Text="{Binding OriginalPageNumber, StringFormat=元 {0}}" FontSize="9" Classes="muted" Margin="4,0,0,0" />
+                        <TextBlock Grid.Column="2" FontSize="9" Classes="muted" Margin="4,0,0,0">
+                        <TextBlock.Text>
+                          <MultiBinding Converter="{x:Static loc:LocFormatConverter.Instance}" ConverterParameter="Page_Original">
+                            <Binding Path="OriginalPageNumber" />
+                            <Binding Path="Version" Source="{x:Static loc:Loc.Instance}" />
+                          </MultiBinding>
+                        </TextBlock.Text>
+                      </TextBlock>
                       </Grid>
                     </Grid>
                   </Border>
@@ -347,63 +389,63 @@
       <Border Grid.Column="2" Background="#1C1D20" BorderBrush="#3A3B3F" BorderThickness="1,0,0,0">
         <Grid RowDefinitions="*,Auto">
           <ScrollViewer VerticalScrollBarVisibility="Auto">
-            <StackPanel Margin="9" Spacing="8">
+            <StackPanel Margin="9" Spacing="8" Classes="side-actions">
               <Border Classes="card" IsVisible="{Binding !HasSelection}">
                 <StackPanel Spacing="6">
-                  <TextBlock Text="ページが選択されていません" FontWeight="SemiBold" />
-                  <TextBlock Text="ページをクリックして選択すると、回転・移動・削除・書き出しの操作がここに表示されます。Ctrl／Shift＋クリックで複数選択できます。"
+                  <TextBlock Text="{DynamicResource Panel_NoSelection_Title}" FontWeight="SemiBold" />
+                  <TextBlock Text="{DynamicResource Panel_NoSelection_Desc}"
                              FontSize="10" Classes="muted" TextWrapping="Wrap" />
-                  <Button Content="すべて選択 (Ctrl+A)" Command="{Binding SelectAllCommand}" Classes="compact" HorizontalAlignment="Stretch" />
+                  <Button Content="{DynamicResource Panel_SelectAll}" Command="{Binding SelectAllCommand}" Classes="compact" HorizontalAlignment="Stretch" />
                 </StackPanel>
               </Border>
 
               <StackPanel IsVisible="{Binding HasSelection}" Spacing="8">
                 <Grid ColumnDefinitions="*,Auto" Margin="4,2,0,0">
                   <TextBlock Text="{Binding SelectionHeader}" FontWeight="SemiBold" Foreground="#48B5F5" VerticalAlignment="Center" />
-                  <Button Grid.Column="1" Content="解除" Command="{Binding ClearSelectionCommand}" Classes="compact" ToolTip.Tip="Esc" />
+                  <Button Grid.Column="1" Content="{DynamicResource Panel_Clear}" Command="{Binding ClearSelectionCommand}" Classes="compact" ToolTip.Tip="Esc" />
                 </Grid>
                 <Border Classes="card">
                   <StackPanel Spacing="4">
                     <Grid ColumnDefinitions="*,*">
-                      <Button Content="↶ 左回転" Command="{Binding RotateLeftCommand}" Classes="compact" HorizontalAlignment="Stretch" ToolTip.Tip="Ctrl+L" />
-                      <Button Grid.Column="1" Content="右回転 ↷" Command="{Binding RotateRightCommand}" Classes="compact" HorizontalAlignment="Stretch" ToolTip.Tip="Ctrl+R" />
+                      <Button Content="{DynamicResource Panel_RotateLeft}" Command="{Binding RotateLeftCommand}" Classes="compact" HorizontalAlignment="Stretch" ToolTip.Tip="Ctrl+L" />
+                      <Button Grid.Column="1" Content="{DynamicResource Panel_RotateRight}" Command="{Binding RotateRightCommand}" Classes="compact" HorizontalAlignment="Stretch" ToolTip.Tip="Ctrl+R" />
                     </Grid>
                     <Grid ColumnDefinitions="*,*">
-                      <Button Content="← 前へ" Command="{Binding MovePreviousCommand}" Classes="compact" HorizontalAlignment="Stretch" ToolTip.Tip="Ctrl+←" />
-                      <Button Grid.Column="1" Content="後ろへ →" Command="{Binding MoveNextCommand}" Classes="compact" HorizontalAlignment="Stretch" ToolTip.Tip="Ctrl+→" />
+                      <Button Content="{DynamicResource Panel_MovePrev}" Command="{Binding MovePreviousCommand}" Classes="compact" HorizontalAlignment="Stretch" ToolTip.Tip="Ctrl+←" />
+                      <Button Grid.Column="1" Content="{DynamicResource Panel_MoveNext}" Command="{Binding MoveNextCommand}" Classes="compact" HorizontalAlignment="Stretch" ToolTip.Tip="Ctrl+→" />
                     </Grid>
-                    <Button Content="選択ページを削除" Command="{Binding DeleteSelectedCommand}" Classes="compact"
+                    <Button Content="{DynamicResource Panel_DeleteSelected}" Command="{Binding DeleteSelectedCommand}" Classes="compact"
                             HorizontalAlignment="Stretch" Foreground="#FF8A80" ToolTip.Tip="Delete" />
                   </StackPanel>
                 </Border>
-                <TextBlock Text="選択ページを書き出す" Classes="section" />
+                <TextBlock Text="{DynamicResource Panel_ExportSection}" Classes="section" />
                 <Border Classes="card">
                   <StackPanel Spacing="4">
-                    <Button Content="PDFとして保存…" Command="{Binding OpenSavePanelCommand}" CommandParameter="selected"
+                    <Button Content="{DynamicResource Panel_SaveAsPdf}" Command="{Binding OpenSavePanelCommand}" CommandParameter="selected"
                             Classes="compact" HorizontalAlignment="Stretch" />
-                    <Button Content="テキストを抽出…" Command="{Binding ExtractTextCommand}" CommandParameter="selected"
+                    <Button Content="{DynamicResource Panel_ExtractText}" Command="{Binding ExtractTextCommand}" CommandParameter="selected"
                             Classes="compact" HorizontalAlignment="Stretch" />
-                    <Button Content="埋め込み画像を抽出…" Command="{Binding ExtractImagesCommand}" CommandParameter="selected"
+                    <Button Content="{DynamicResource Panel_ExtractImages}" Command="{Binding ExtractImagesCommand}" CommandParameter="selected"
                             Classes="compact" HorizontalAlignment="Stretch" />
                   </StackPanel>
                 </Border>
               </StackPanel>
 
-              <TextBlock Text="ドキュメント全体" Classes="section" />
+              <TextBlock Text="{DynamicResource Panel_WholeDocument}" Classes="section" />
               <Border Classes="card">
                 <StackPanel Spacing="4">
-                  <Button Content="全ページのテキストを抽出…" Command="{Binding ExtractTextCommand}" CommandParameter="all"
+                  <Button Content="{DynamicResource Panel_ExtractAllText}" Command="{Binding ExtractTextCommand}" CommandParameter="all"
                           Classes="compact" HorizontalAlignment="Stretch" />
-                  <Button Content="全ページの画像を抽出…" Command="{Binding ExtractImagesCommand}" CommandParameter="all"
+                  <Button Content="{DynamicResource Panel_ExtractAllImages}" Command="{Binding ExtractImagesCommand}" CommandParameter="all"
                           Classes="compact" HorizontalAlignment="Stretch" />
                 </StackPanel>
               </Border>
             </StackPanel>
           </ScrollViewer>
           <Border Grid.Row="1" BorderBrush="#3A3B3F" BorderThickness="0,1,0,0" Padding="9">
-            <Button Content="保存… (Ctrl+S)" Command="{Binding OpenSavePanelCommand}" IsEnabled="{Binding CanEdit}"
+            <Button Content="{DynamicResource Panel_SaveButton}" Command="{Binding OpenSavePanelCommand}" IsEnabled="{Binding CanEdit}"
                     Classes="primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                    ToolTip.Tip="保存するページの範囲やパスワードを選んで保存します" />
+                    ToolTip.Tip="{DynamicResource Panel_SaveTip}" />
           </Border>
         </Grid>
       </Border>
@@ -412,10 +454,10 @@
     <Border Grid.Row="2" Background="#191A1D" BorderBrush="#3A3B3F" BorderThickness="0,1,0,0">
       <Grid Margin="10,0" ColumnDefinitions="Auto,*,Auto">
         <TextBlock Text="{Binding SelectionText}" FontSize="10" VerticalAlignment="Center" IsVisible="{Binding HasDocument}" />
-        <TextBlock Grid.Column="1" Text="未保存の変更あり" Foreground="#FFCA6A" FontSize="10" VerticalAlignment="Center" HorizontalAlignment="Center" IsVisible="{Binding IsDirty}" />
-        <TextBlock Grid.Column="2" Text="PDFをページの間にドロップすると、その位置に挿入されます" Classes="muted" FontSize="9"
+        <TextBlock Grid.Column="1" Text="{DynamicResource Status_Unsaved}" Foreground="#FFCA6A" FontSize="10" VerticalAlignment="Center" HorizontalAlignment="Center" IsVisible="{Binding IsDirty}" />
+        <TextBlock Grid.Column="2" Text="{DynamicResource Status_DropHintDoc}" Classes="muted" FontSize="9"
                    VerticalAlignment="Center" IsVisible="{Binding HasDocument}" />
-        <TextBlock Grid.Column="2" Text="PDFを画面内のどこへでもドロップできます" Classes="muted" FontSize="9"
+        <TextBlock Grid.Column="2" Text="{DynamicResource Status_DropHintStart}" Classes="muted" FontSize="9"
                    VerticalAlignment="Center" IsVisible="{Binding !HasDocument}" />
       </Grid>
     </Border>
@@ -426,36 +468,36 @@
         <StackPanel Spacing="16">
           <Grid ColumnDefinitions="*,Auto">
             <StackPanel>
-              <TextBlock Text="PDFを保存" FontSize="20" FontWeight="SemiBold" />
+              <TextBlock Text="{DynamicResource Save_Title}" FontSize="20" FontWeight="SemiBold" />
               <TextBlock Text="{Binding SaveSummary}" Classes="muted" TextTrimming="CharacterEllipsis" />
             </StackPanel>
             <Button Grid.Column="1" Content="×" Command="{Binding CloseSavePanelCommand}" Classes="compact" VerticalAlignment="Top" />
           </Grid>
 
           <StackPanel Spacing="2">
-            <TextBlock Text="保存するページ" FontWeight="SemiBold" Margin="0,0,0,4" />
+            <TextBlock Text="{DynamicResource Save_PagesLabel}" FontWeight="SemiBold" Margin="0,0,0,4" />
             <RadioButton GroupName="SaveScope" Content="{Binding AllPagesOptionText}" IsChecked="{Binding SaveAllPages, Mode=TwoWay}" />
             <RadioButton GroupName="SaveScope" Content="{Binding SelectedPagesOptionText}" IsChecked="{Binding SaveSelectionOnly, Mode=TwoWay}"
                          IsEnabled="{Binding HasSelection}" />
           </StackPanel>
 
           <StackPanel Spacing="6">
-            <ToggleSwitch Content="パスワードで保護する" IsChecked="{Binding ProtectOutput}" />
-            <TextBox PlaceholderText="パスワード" PasswordChar="●" Text="{Binding OutputPassword}" IsVisible="{Binding ProtectOutput}" />
-            <TextBox PlaceholderText="パスワード（確認）" PasswordChar="●" Text="{Binding ConfirmOutputPassword}" IsVisible="{Binding ProtectOutput}" />
-            <TextBlock Text="AES-256で暗号化されます。パスワードを忘れると開けなくなるので注意してください。" FontSize="10"
+            <ToggleSwitch Content="{DynamicResource Save_Protect}" IsChecked="{Binding ProtectOutput}" />
+            <TextBox PlaceholderText="{DynamicResource Task_Protect_Title}" PasswordChar="●" Text="{Binding OutputPassword}" IsVisible="{Binding ProtectOutput}" />
+            <TextBox PlaceholderText="{DynamicResource Save_PasswordConfirm}" PasswordChar="●" Text="{Binding ConfirmOutputPassword}" IsVisible="{Binding ProtectOutput}" />
+            <TextBlock Text="{DynamicResource Save_ProtectNote}" FontSize="10"
                        Classes="muted" TextWrapping="Wrap" IsVisible="{Binding ProtectOutput}" />
           </StackPanel>
 
           <Border Background="#3A3120" BorderBrush="#8A6D2B" BorderThickness="1" CornerRadius="6" Padding="10,8"
                   IsVisible="{Binding ShowDecryptNotice}">
-            <TextBlock Text="元のPDFはパスワードで保護されています。このまま保存すると、パスワードなしのPDFになります（保護の解除）。"
+            <TextBlock Text="{DynamicResource Save_DecryptNotice}"
                        FontSize="11" TextWrapping="Wrap" Foreground="#FFE2A8" />
           </Border>
 
           <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Content="キャンセル" Command="{Binding CloseSavePanelCommand}" Classes="compact" />
-            <Button Content="保存先を選んで保存…" Command="{Binding ConfirmSaveCommand}" Classes="primary" />
+            <Button Content="{DynamicResource Common_Cancel}" Command="{Binding CloseSavePanelCommand}" Classes="compact" />
+            <Button Content="{DynamicResource Save_Confirm}" Command="{Binding ConfirmSaveCommand}" Classes="primary" />
           </StackPanel>
         </StackPanel>
       </Border>
@@ -473,9 +515,50 @@
             <Button Grid.Column="2" Content="×" Command="{Binding CloseInfoCommand}" Classes="compact" />
           </Grid>
           <views:SettingsView Grid.Row="1" Margin="0,18,0,14" DataContext="{Binding Settings}" />
-          <Button Grid.Row="2" Content="閉じる" Command="{Binding CloseInfoCommand}" Classes="primary" HorizontalAlignment="Right" />
+          <Button Grid.Row="2" Content="{DynamicResource Common_Close}" Command="{Binding CloseInfoCommand}" Classes="primary" HorizontalAlignment="Right" />
         </Grid>
       </Border>
+    </Border>
+
+    <!-- 拡大プレビュー：ダブルクリック・Space・右クリックで開き、←→でページ送り、Escで閉じる。 -->
+    <Border x:Name="PreviewOverlay" Grid.RowSpan="3" Background="#EE101112" IsVisible="{Binding IsPreviewOpen}" ZIndex="22">
+      <Grid Margin="16,12,16,16" RowDefinitions="Auto,*">
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+            <TextBlock Text="{Binding PreviewPageText}" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding PreviewSourceText}" Classes="muted" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+          </StackPanel>
+          <StackPanel Grid.Column="1" Orientation="Horizontal">
+            <Button Content="↶" Command="{Binding RotatePreviewLeftCommand}" Classes="compact" MinWidth="36" ToolTip.Tip="{DynamicResource Menu_RotateLeft}" />
+            <Button Content="↷" Command="{Binding RotatePreviewRightCommand}" Classes="compact" MinWidth="36" ToolTip.Tip="{DynamicResource Menu_RotateRight}" />
+            <Button Content="×" Command="{Binding ClosePreviewCommand}" Classes="compact" MinWidth="36" ToolTip.Tip="{DynamicResource Preview_CloseTip}" />
+          </StackPanel>
+        </Grid>
+        <Grid Grid.Row="1" Margin="0,10,0,0" ColumnDefinitions="56,*,56">
+          <Button Content="‹" FontSize="30" Command="{Binding PreviewPreviousCommand}" IsEnabled="{Binding CanPreviewPrevious}"
+                  Classes="compact" Width="46" Height="80" VerticalAlignment="Center" HorizontalContentAlignment="Center"
+                  ToolTip.Tip="{DynamicResource Preview_PrevTip}" />
+          <Panel Grid.Column="1">
+            <LayoutTransformControl HorizontalAlignment="Center" VerticalAlignment="Center">
+              <LayoutTransformControl.LayoutTransform>
+                <RotateTransform Angle="{Binding PreviewPage.Rotation}" />
+              </LayoutTransformControl.LayoutTransform>
+              <Border Background="White" BoxShadow="0 4 24 0 #80000000">
+                <Image Source="{Binding PreviewImage}" Stretch="Uniform" />
+              </Border>
+            </LayoutTransformControl>
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10" IsVisible="{Binding IsPreviewLoading}">
+              <ProgressBar IsIndeterminate="True" Width="200" Height="4" />
+              <TextBlock Text="{DynamicResource Preview_Loading}" HorizontalAlignment="Center" />
+            </StackPanel>
+            <TextBlock Text="{DynamicResource Preview_Failed}" Foreground="#FF8A80" HorizontalAlignment="Center" VerticalAlignment="Center"
+                       IsVisible="{Binding IsPreviewFailed}" />
+          </Panel>
+          <Button Grid.Column="2" Content="›" FontSize="30" Command="{Binding PreviewNextCommand}" IsEnabled="{Binding CanPreviewNext}"
+                  Classes="compact" Width="46" Height="80" VerticalAlignment="Center" HorizontalAlignment="Right" HorizontalContentAlignment="Center"
+                  ToolTip.Tip="{DynamicResource Preview_NextTip}" />
+        </Grid>
+      </Grid>
     </Border>
 
     <Border Grid.RowSpan="3" Background="#B0101112" IsVisible="{Binding IsBusy}" ZIndex="30">
@@ -483,7 +566,7 @@
         <StackPanel Spacing="14" MinWidth="280">
           <ProgressBar IsIndeterminate="True" Height="5" />
           <TextBlock Text="{Binding BusyText}" FontSize="15" HorizontalAlignment="Center" />
-          <Button Content="キャンセル" Command="{Binding CancelOperationCommand}" Classes="compact" HorizontalAlignment="Center" />
+          <Button Content="{DynamicResource Common_Cancel}" Command="{Binding CancelOperationCommand}" Classes="compact" HorizontalAlignment="Center" />
         </StackPanel>
       </Border>
     </Border>

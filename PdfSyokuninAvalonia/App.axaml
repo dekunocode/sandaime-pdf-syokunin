@@ -7,7 +7,7 @@
     <Style Selector="Window">
       <Setter Property="Background" Value="#202124" />
       <Setter Property="Foreground" Value="#F2F2F4" />
-      <Setter Property="FontFamily" Value="Inter, Yu Gothic UI, Segoe UI" />
+      <Setter Property="FontFamily" Value="{DynamicResource AppFontFamily}" />
       <Setter Property="FontSize" Value="13" />
     </Style>
     <Style Selector="Button.compact">

@@ -7,6 +7,7 @@ using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using System.Collections.Specialized;
+using PdfSyokunin.Localization;
 using PdfSyokunin.Models;
 using PdfSyokunin.Services;
 using PdfSyokunin.ViewModels;
@@ -106,7 +107,18 @@ public partial class MainWindow : Window
 
     private void Window_OnPreviewKeyDown(object? sender, KeyEventArgs e)
     {
-        if (e.KeyModifiers != KeyModifiers.Control || e.Source is TextBox)
+        if (e.Source is TextBox)
+        {
+            return;
+        }
+
+        if (HandlePreviewKey(e))
+        {
+            e.Handled = true;
+            return;
+        }
+
+        if (e.KeyModifiers != KeyModifiers.Control)
         {
             return;
         }
@@ -122,6 +134,51 @@ public partial class MainWindow : Window
             command.Execute(null);
             e.Handled = true;
         }
+    }
+
+    /// <summary>プレビュー表示中は ←→ でページ送り、Space/Esc で閉じる。一覧ではSpaceで開く。</summary>
+    private bool HandlePreviewKey(KeyEventArgs e)
+    {
+        if (e.KeyModifiers != KeyModifiers.None)
+        {
+            return false;
+        }
+
+        if (viewModel.IsPreviewOpen)
+        {
+            switch (e.Key)
+            {
+                case Key.Left:
+                case Key.Up:
+                case Key.PageUp:
+                    viewModel.PreviewPreviousCommand.Execute(null);
+                    return true;
+                case Key.Right:
+                case Key.Down:
+                case Key.PageDown:
+                    viewModel.PreviewNextCommand.Execute(null);
+                    return true;
+                case Key.Space:
+                case Key.Escape:
+                    viewModel.ClosePreviewCommand.Execute(null);
+                    return true;
+            }
+
+            return false;
+        }
+
+        if (e.Key == Key.Space && !viewModel.IsSavePanelOpen && !viewModel.IsInfoOpen)
+        {
+            // ボタンやチェックボックスのSpace操作は奪わず、ページにフォーカスがあるときだけ開く。
+            var page = FindPage(e.Source, out var fromCheckBox);
+            if (page is not null && !fromCheckBox)
+            {
+                viewModel.OpenPreviewCommand.Execute(page);
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void Window_OnGotFocus(object? sender, FocusChangedEventArgs e)
@@ -207,6 +264,16 @@ public partial class MainWindow : Window
             return;
         }
 
+        // ダブルクリックで拡大プレビュー。1回目のクリックで選択は済んでいる。
+        if (e.ClickCount >= 2)
+        {
+            pressedPage = null;
+            collapseSelectionOnRelease = false;
+            viewModel.OpenPreviewCommand.Execute(page);
+            e.Handled = true;
+            return;
+        }
+
         pressedPage = page;
         dragStart = e.GetPosition(this);
         pageDragActive = false;
@@ -248,8 +315,8 @@ public partial class MainWindow : Window
             pageDragActive = true;
             e.Pointer.Capture(pageList);
             ShowDragHint(movingPages.Count == 1
-                ? "水色のラインの位置へページを移動"
-                : $"{movingPages.Count}ページを水色のラインの位置へ移動");
+                ? Loc.Get("Drag_MovePage")
+                : Loc.Format("Drag_MovePages", movingPages.Count));
         }
 
         UpdateInsertionIndicator(point);
@@ -297,6 +364,9 @@ public partial class MainWindow : Window
         var index = viewModel.Pages.IndexOf(page);
         switch (action)
         {
+            case "preview":
+                viewModel.OpenPreviewCommand.Execute(page);
+                return;
             case "insert-before":
                 await viewModel.InsertFilesAtCommand.ExecuteAsync(index);
                 return;
@@ -470,7 +540,7 @@ public partial class MainWindow : Window
         if (IsOverPageArea(point))
         {
             UpdateInsertionIndicator(point);
-            ShowDragHint("水色のラインの位置にPDFを挿入");
+            ShowDragHint(Loc.Get("Drag_InsertPdf"));
         }
         else
         {

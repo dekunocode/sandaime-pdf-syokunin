@@ -1,7 +1,9 @@
 using Avalonia.Media;
+using Avalonia.Media.Imaging;
 using Avalonia.Media.Immutable;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using PdfSyokunin.Localization;
 using PdfSyokunin.Models;
 using PdfSyokunin.Services;
 using PdfSyokunin.Utilities;
@@ -32,27 +34,34 @@ public partial class MainViewModel : ObservableObject
     private readonly IPdfExtractionService extraction;
     private readonly IPdfThumbnailService thumbnails;
     private readonly IRecentFilesService recentFiles;
+    private readonly IPdfPageRenderer pageRenderer;
     private readonly Stack<WorkspaceSnapshot> undoHistory = [];
     private readonly Stack<WorkspaceSnapshot> redoHistory = [];
     private readonly Dictionary<string, IBrush> sourceBrushes = new(StringComparer.OrdinalIgnoreCase);
     private bool mergeGuideShown;
     private CancellationTokenSource? operationCancellation;
     private CancellationTokenSource? notificationCancellation;
+    private CancellationTokenSource? previewCancellation;
+    private Bitmap? renderedPreview;
+    private bool restoringSnapshot;
 
     public MainViewModel(
         IDialogService dialogs,
         IPdfDocumentService pdf,
         IPdfExtractionService extraction,
         IPdfThumbnailService thumbnails,
-        IRecentFilesService recentFiles)
+        IRecentFilesService recentFiles,
+        IPdfPageRenderer? pageRenderer = null)
     {
         this.dialogs = dialogs;
         this.pdf = pdf;
         this.extraction = extraction;
         this.thumbnails = thumbnails;
         this.recentFiles = recentFiles;
+        this.pageRenderer = pageRenderer ?? new PdfPageRenderer();
 
         Pages.CollectionChanged += OnPagesCollectionChanged;
+        Loc.Instance.LanguageChanged += (_, _) => OnLanguageChanged();
         ReloadRecentFiles();
     }
 
@@ -81,15 +90,15 @@ public partial class MainViewModel : ObservableObject
     public bool HasSelection => Pages.Any(page => page.IsSelected);
 
     // パネル表示中はキーボードショートカットで背後のページを変更しない。
-    public bool CanEditSelection => HasSelection && !IsBusy && !IsSavePanelOpen && !IsInfoOpen;
+    public bool CanEditSelection => HasSelection && !IsBusy && !IsSavePanelOpen && !IsInfoOpen && !IsPreviewOpen;
 
     public bool HasMultipleSources => SourceFiles.Count > 1;
 
     public string WorkspaceTitle => SourceFiles.Count switch
     {
-        0 => "PDFを開いてください",
+        0 => Loc.Get("Workspace_OpenPdf"),
         1 => SourceFiles[0].FileName,
-        _ => $"{SourceFiles.Count}個のPDFを結合中"
+        _ => Loc.Format("Workspace_Merging", SourceFiles.Count)
     };
 
     public string SelectionText
@@ -98,44 +107,40 @@ public partial class MainViewModel : ObservableObject
         {
             var selectedCount = SelectedCount;
             return selectedCount > 0
-                ? $"{Pages.Count}ページ｜{selectedCount}ページ選択中"
-                : $"{Pages.Count}ページ｜ページを選択して操作";
+                ? Loc.Format("Selection_Status", Pages.Count, selectedCount)
+                : Loc.Format("Selection_StatusNone", Pages.Count);
         }
     }
 
-    public string SelectionHeader => $"{SelectedCount}ページを選択中";
+    public string SelectionHeader => Loc.Format("Selection_Header", SelectedCount);
 
     public bool IsGuideVisible => ActiveTask != WorkspaceTask.None && HasDocument;
 
     public string GuideTitle => ActiveTask switch
     {
-        WorkspaceTask.Merge => "PDFの結合",
-        WorkspaceTask.Organize => "ページの整理",
-        WorkspaceTask.Extract => "ページ・テキスト・画像の抽出",
-        WorkspaceTask.Protect => "パスワードの設定・解除",
+        WorkspaceTask.Merge => Loc.Get("Guide_Merge_Title"),
+        WorkspaceTask.Organize => Loc.Get("Guide_Organize_Title"),
+        WorkspaceTask.Extract => Loc.Get("Guide_Extract_Title"),
+        WorkspaceTask.Protect => Loc.Get("Guide_Protect_Title"),
         _ => string.Empty
     };
 
     public string GuideText => ActiveTask switch
     {
-        WorkspaceTask.Merge =>
-            "左の一覧の ↑↓ で結合する順番を決めて［保存］を押してください。PDFを追加すると末尾に、ページの間へドロップするとその位置に入ります。",
-        WorkspaceTask.Organize =>
-            "ページをクリックして選択します（Ctrl／Shift＋クリックで複数）。ドラッグで並べ替え、右パネルや右クリックで回転・削除できます。",
-        WorkspaceTask.Extract =>
-            "取り出したいページを選択して、右パネルの「選択ページを書き出す」から形式を選んでください。選択しなければ「ドキュメント全体」から抽出できます。",
-        WorkspaceTask.Protect =>
-            "［保存］パネルでパスワードを設定できます。保護されたPDFは、パスワードなしで保存すると保護を解除できます。",
+        WorkspaceTask.Merge => Loc.Get("Guide_Merge_Text"),
+        WorkspaceTask.Organize => Loc.Get("Guide_Organize_Text"),
+        WorkspaceTask.Extract => Loc.Get("Guide_Extract_Text"),
+        WorkspaceTask.Protect => Loc.Get("Guide_Protect_Text"),
         _ => string.Empty
     };
 
     public string SaveSummary => SourceFiles.Count > 1
-        ? $"{SourceFiles.Count}個のPDFを結合・全{Pages.Count}ページ"
-        : $"{WorkspaceTitle}・全{Pages.Count}ページ";
+        ? Loc.Format("Save_SummaryMerged", SourceFiles.Count, Pages.Count)
+        : Loc.Format("Save_Summary", WorkspaceTitle, Pages.Count);
 
-    public string AllPagesOptionText => $"すべてのページ（{Pages.Count}ページ）";
+    public string AllPagesOptionText => Loc.Format("Save_AllPages", Pages.Count);
 
-    public string SelectedPagesOptionText => $"選択したページのみ（{SelectedCount}ページ）";
+    public string SelectedPagesOptionText => Loc.Format("Save_SelectedPages", SelectedCount);
 
     public bool SaveAllPages
     {
@@ -192,12 +197,41 @@ public partial class MainViewModel : ObservableObject
 
     public string ZoomText => $"{PageZoom:P0}";
 
+    [ObservableProperty]
+    private bool isPreviewOpen;
+
+    [ObservableProperty]
+    private EditablePdfPage? previewPage;
+
+    [ObservableProperty]
+    private Bitmap? previewImage;
+
+    [ObservableProperty]
+    private bool isPreviewLoading;
+
+    [ObservableProperty]
+    private bool isPreviewFailed;
+
+    private int PreviewIndex => PreviewPage is null ? -1 : Pages.IndexOf(PreviewPage);
+
+    public bool CanPreviewPrevious => PreviewIndex > 0;
+
+    public bool CanPreviewNext => PreviewIndex >= 0 && PreviewIndex < Pages.Count - 1;
+
+    public string PreviewPageText => PreviewPage is null
+        ? string.Empty
+        : Loc.Format("Preview_Page", PreviewIndex + 1, Pages.Count);
+
+    public string PreviewSourceText => PreviewPage is null
+        ? string.Empty
+        : Loc.Format("Preview_Source", PreviewPage.SourceFileName, PreviewPage.OriginalPageNumber);
+
     public Task LoadStartupFilesAsync(IEnumerable<string> paths) => LoadFilesAsync(paths, replace: true);
 
     public Task<bool> ConfirmCloseAsync() =>
         !IsDirty
             ? Task.FromResult(true)
-            : dialogs.ConfirmAsync("保存していない編集内容があります。終了しますか？", "三代目PDF職人");
+            : dialogs.ConfirmAsync(Loc.Get("Confirm_ExitUnsaved"), "三代目PDF職人");
 
     /// <summary>右クリックしたページが未選択なら、そのページだけを操作対象にする。</summary>
     public void SelectOnly(EditablePdfPage target)
@@ -275,7 +309,7 @@ public partial class MainViewModel : ObservableObject
         else if (!File.Exists(item.FullPath))
         {
             ReloadRecentFiles();
-            dialogs.ShowWarning("ファイルが見つからないため、履歴から取り除きました。");
+            dialogs.ShowWarning(Loc.Get("Warn_FileMissing"));
         }
     }
 
@@ -305,7 +339,7 @@ public partial class MainViewModel : ObservableObject
     {
         recentFiles.Clear();
         ReloadRecentFiles();
-        ShowNotification("最近使ったファイルを消去しました。");
+        ShowNotification(Loc.Get("Notify_RecentCleared"));
     }
 
     [RelayCommand]
@@ -313,7 +347,7 @@ public partial class MainViewModel : ObservableObject
     {
         recentFiles.Remove(item.FullPath);
         ReloadRecentFiles();
-        ShowNotification($"{item.FileName}を履歴から削除しました。");
+        ShowNotification(Loc.Format("Notify_RecentRemoved", item.FileName));
     }
 
     [RelayCommand]
@@ -337,7 +371,11 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void Escape()
     {
-        if (IsSavePanelOpen)
+        if (IsPreviewOpen)
+        {
+            ClosePreview();
+        }
+        else if (IsSavePanelOpen)
         {
             IsSavePanelOpen = false;
         }
@@ -385,7 +423,7 @@ public partial class MainViewModel : ObservableObject
         }
 
         RebuildSourceFiles();
-        CompleteEdit($"{targets.Length}ページを編集対象から削除しました。");
+        CompleteEdit(Loc.Format("Notify_PagesDeleted", targets.Length));
     }
 
     [RelayCommand]
@@ -406,7 +444,7 @@ public partial class MainViewModel : ObservableObject
         }
 
         RebuildSourceFiles();
-        CompleteEdit($"{file.FileName}を編集対象から外しました。");
+        CompleteEdit(Loc.Format("Notify_SourceRemoved", file.FileName));
     }
 
     [RelayCommand]
@@ -444,7 +482,7 @@ public partial class MainViewModel : ObservableObject
         PushUndoSnapshot();
         ApplyPageOrder(remaining);
         RebuildSourceFiles();
-        CompleteEdit(movingInOrder.Length == 1 ? "ページを並び替えました。" : $"{movingInOrder.Length}ページを移動しました。");
+        CompleteEdit(movingInOrder.Length == 1 ? Loc.Get("Notify_PageReordered") : Loc.Format("Notify_PagesMoved", movingInOrder.Length));
     }
 
     [RelayCommand]
@@ -459,7 +497,7 @@ public partial class MainViewModel : ObservableObject
         RestoreSnapshot(undoHistory.Pop());
         IsDirty = true;
         UpdateDerivedState();
-        ShowNotification("編集操作を元に戻しました。");
+        ShowNotification(Loc.Get("Notify_Undone"));
     }
 
     [RelayCommand]
@@ -474,7 +512,7 @@ public partial class MainViewModel : ObservableObject
         RestoreSnapshot(redoHistory.Pop());
         IsDirty = true;
         UpdateDerivedState();
-        ShowNotification("編集操作をやり直しました。");
+        ShowNotification(Loc.Get("Notify_Redone"));
     }
 
     [RelayCommand]
@@ -515,8 +553,8 @@ public partial class MainViewModel : ObservableObject
         var password = ProtectOutput ? OutputPassword : null;
         var saved = await RunAsync(
             token => pdf.SavePagesAsync(GetPageReferences(targets), output, password, token),
-            "PDFを保存しています…",
-            SaveSelectionOnly ? "選択ページをPDFへ書き出しました。" : "編集したPDFを保存しました。");
+            Loc.Get("Busy_Saving"),
+            SaveSelectionOnly ? Loc.Get("Notify_SavedSelection") : Loc.Get("Notify_Saved"));
         if (!saved)
         {
             return;
@@ -556,7 +594,7 @@ public partial class MainViewModel : ObservableObject
                 var text = await extraction.ExtractTextAsync(temporaryPdf, token);
                 if (string.IsNullOrWhiteSpace(text))
                 {
-                    throw new InvalidOperationException("テキストが見つかりませんでした。画像PDFにはOCRが必要です。");
+                    throw new InvalidOperationException(Loc.Get("Error_NoText"));
                 }
 
                 await Task.Run(
@@ -568,8 +606,8 @@ public partial class MainViewModel : ObservableObject
                             new UTF8Encoding(encoderShouldEmitUTF8Identifier: true))),
                     token);
             },
-            "テキストを抽出しています…",
-            "テキストを保存しました。");
+            Loc.Get("Busy_ExtractingText"),
+            Loc.Get("Notify_TextSaved"));
     }
 
     [RelayCommand]
@@ -594,15 +632,174 @@ public partial class MainViewModel : ObservableObject
                 var count = await extraction.ExtractImagesAsync(temporaryPdf, outputDirectory, token);
                 if (count == 0)
                 {
-                    throw new InvalidOperationException("埋め込み画像が見つかりませんでした。");
+                    throw new InvalidOperationException(Loc.Get("Error_NoImages"));
                 }
             },
-            "画像を抽出しています…",
-            "埋め込み画像を保存しました。");
+            Loc.Get("Busy_ExtractingImages"),
+            Loc.Get("Notify_ImagesSaved"));
     }
 
     [RelayCommand]
     private void CancelOperation() => operationCancellation?.Cancel();
+
+    [RelayCommand]
+    private void OpenPreview(EditablePdfPage? page)
+    {
+        if (page is null || !Pages.Contains(page) || IsBusy)
+        {
+            return;
+        }
+
+        IsSavePanelOpen = false;
+        IsInfoOpen = false;
+        IsPreviewOpen = true;
+        ShowPreviewPage(page);
+    }
+
+    [RelayCommand]
+    private void ClosePreview()
+    {
+        previewCancellation?.Cancel();
+        IsPreviewOpen = false;
+        PreviewPage = null;
+        ReplacePreviewImage(null);
+        IsPreviewLoading = false;
+        IsPreviewFailed = false;
+    }
+
+    [RelayCommand]
+    private void PreviewPrevious()
+    {
+        if (CanPreviewPrevious)
+        {
+            ShowPreviewPage(Pages[PreviewIndex - 1]);
+        }
+    }
+
+    [RelayCommand]
+    private void PreviewNext()
+    {
+        if (CanPreviewNext)
+        {
+            ShowPreviewPage(Pages[PreviewIndex + 1]);
+        }
+    }
+
+    // プレビュー中の回転も通常の編集として扱い、元に戻せるようにする。
+    [RelayCommand]
+    private void RotatePreviewLeft() => RotatePreviewPage(-90);
+
+    [RelayCommand]
+    private void RotatePreviewRight() => RotatePreviewPage(90);
+
+    private void RotatePreviewPage(int angle)
+    {
+        if (PreviewPage is not { } page || IsBusy)
+        {
+            return;
+        }
+
+        PushUndoSnapshot();
+        page.Rotation = ((page.Rotation + angle) % 360 + 360) % 360;
+        // プレビューで回すのは表示中の1ページだけなので、「選択ページ」ではなく「このページ」と知らせる。
+        CompleteEdit(angle < 0 ? Loc.Get("Notify_PageRotatedLeft") : Loc.Get("Notify_PageRotatedRight"));
+    }
+
+    private async void ShowPreviewPage(EditablePdfPage page)
+    {
+        previewCancellation?.Cancel();
+        previewCancellation?.Dispose();
+        var cancellation = new CancellationTokenSource();
+        previewCancellation = cancellation;
+
+        PreviewPage = page;
+        IsPreviewFailed = false;
+        IsPreviewLoading = true;
+        ReplacePreviewImage(null);
+        try
+        {
+            // まずはサムネイルを引き伸ばして即座に見せ（ReplacePreviewImage(null)）、高解像度の描画が済んだら差し替える。
+            var image = await pageRenderer.RenderAsync(page.SourcePath, page.OriginalIndex, page.SourcePassword, 1600, cancellation.Token);
+            if (cancellation.IsCancellationRequested || !ReferenceEquals(PreviewPage, page))
+            {
+                image.Dispose();
+                return;
+            }
+
+            ReplacePreviewImage(image);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+        catch (Exception)
+        {
+            if (ReferenceEquals(PreviewPage, page))
+            {
+                IsPreviewFailed = true;
+            }
+        }
+        finally
+        {
+            if (ReferenceEquals(previewCancellation, cancellation))
+            {
+                IsPreviewLoading = false;
+            }
+        }
+    }
+
+    private void ReplacePreviewImage(Bitmap? image)
+    {
+        // 高解像度画像だけを破棄する。サムネイルは元に戻す履歴でも使うので破棄しない。
+        var old = renderedPreview;
+        renderedPreview = image;
+        PreviewImage = image ?? PreviewPage?.Thumbnail;
+        old?.Dispose();
+    }
+
+    private void CheckPreviewPage()
+    {
+        if (!IsPreviewOpen || restoringSnapshot)
+        {
+            return;
+        }
+
+        if (PreviewPage is null || !Pages.Contains(PreviewPage))
+        {
+            ClosePreview();
+        }
+        else
+        {
+            NotifyPreviewChanged();
+        }
+    }
+
+    partial void OnPreviewPageChanged(EditablePdfPage? value) => NotifyPreviewChanged();
+
+    partial void OnIsPreviewOpenChanged(bool value) => NotifySelectionChanged();
+
+    private void NotifyPreviewChanged()
+    {
+        OnPropertyChanged(nameof(CanPreviewPrevious));
+        OnPropertyChanged(nameof(CanPreviewNext));
+        OnPropertyChanged(nameof(PreviewPageText));
+        OnPropertyChanged(nameof(PreviewSourceText));
+        PreviewPreviousCommand.NotifyCanExecuteChanged();
+        PreviewNextCommand.NotifyCanExecuteChanged();
+    }
+
+    private void OnLanguageChanged()
+    {
+        OnPropertyChanged(nameof(WorkspaceTitle));
+        OnPropertyChanged(nameof(SelectionText));
+        OnPropertyChanged(nameof(SelectionHeader));
+        OnPropertyChanged(nameof(GuideTitle));
+        OnPropertyChanged(nameof(GuideText));
+        OnPropertyChanged(nameof(SaveSummary));
+        OnPropertyChanged(nameof(AllPagesOptionText));
+        OnPropertyChanged(nameof(SelectedPagesOptionText));
+        NotifyPreviewChanged();
+    }
 
     [RelayCommand]
     private void OpenInfo() => IsInfoOpen = true;
@@ -623,7 +820,7 @@ public partial class MainViewModel : ObservableObject
         {
             if (!replace && paths.Any())
             {
-                ShowNotification("同じPDFはすでに追加されています。");
+                ShowNotification(Loc.Get("Notify_AlreadyAdded"));
             }
 
             return;
@@ -635,11 +832,11 @@ public partial class MainViewModel : ObservableObject
             foreach (var path in normalizedPaths)
             {
                 token.ThrowIfCancellationRequested();
-                BusyText = $"{Path.GetFileName(path)}を読み込んでいます…";
+                BusyText = Loc.Format("Busy_LoadingFile", Path.GetFileName(path));
                 var thumbnailsForFile = await LoadThumbnailsWithPasswordAsync(path, token);
                 loadedPages.AddRange(thumbnailsForFile);
             }
-        }, "PDFを読み込んでいます…", string.Empty);
+        }, Loc.Get("Busy_Loading"), string.Empty);
         if (!loaded)
         {
             return;
@@ -679,10 +876,10 @@ public partial class MainViewModel : ObservableObject
             ActiveTask = WorkspaceTask.Merge;
         }
 
-        var position = insertionIndex is null || replace ? string.Empty : $"{index - loadedPages.Count + 1}ページ目の位置へ";
-        ShowNotification(replace
-            ? $"{normalizedPaths.Length}個のPDFを読み込みました。"
-            : $"{normalizedPaths.Length}個のPDFを{position}結合しました。");
+        ShowNotification(
+            replace ? Loc.Format("Notify_Loaded", normalizedPaths.Length)
+            : insertionIndex is null ? Loc.Format("Notify_Merged", normalizedPaths.Length)
+            : Loc.Format("Notify_MergedAt", normalizedPaths.Length, index - loadedPages.Count + 1));
     }
 
     private void RotateSelection(int angle)
@@ -699,7 +896,7 @@ public partial class MainViewModel : ObservableObject
             page.Rotation = ((page.Rotation + angle) % 360 + 360) % 360;
         }
 
-        CompleteEdit(angle < 0 ? "選択ページを左へ回転しました。" : "選択ページを右へ回転しました。");
+        CompleteEdit(angle < 0 ? Loc.Get("Notify_RotatedLeft") : Loc.Get("Notify_RotatedRight"));
     }
 
     private void MoveSource(PdfFileItem file, int direction)
@@ -722,7 +919,7 @@ public partial class MainViewModel : ObservableObject
         PushUndoSnapshot();
         ApplyPageOrder(newOrder);
         RebuildSourceFiles();
-        CompleteEdit($"{file.FileName}の結合順を変更しました。");
+        CompleteEdit(Loc.Format("Notify_SourceOrderChanged", file.FileName));
     }
 
     private void ApplyPageOrder(IReadOnlyList<EditablePdfPage> order)
@@ -841,7 +1038,7 @@ public partial class MainViewModel : ObservableObject
         PushUndoSnapshot();
         ApplyPageOrder(order);
         RebuildSourceFiles();
-        CompleteEdit("選択ページを移動しました。");
+        CompleteEdit(Loc.Get("Notify_SelectionMoved"));
     }
 
     private async Task RunWithTemporaryPdfAsync(
@@ -897,7 +1094,7 @@ public partial class MainViewModel : ObservableObject
         }
         catch (OperationCanceledException)
         {
-            ShowNotification("処理をキャンセルしました。");
+            ShowNotification(Loc.Get("Notify_Cancelled"));
             return false;
         }
         catch (Exception exception)
@@ -927,16 +1124,26 @@ public partial class MainViewModel : ObservableObject
 
     private void RestoreSnapshot(WorkspaceSnapshot snapshot)
     {
-        ClearPages();
-        foreach (var state in snapshot.Pages)
+        // 一度空にしてから並べ直すため、途中でプレビューが閉じないようにする。
+        restoringSnapshot = true;
+        try
         {
-            state.Page.Rotation = state.Rotation;
-            state.Page.IsSelected = state.IsSelected;
-            AddPage(state.Page, Pages.Count);
+            ClearPages();
+            foreach (var state in snapshot.Pages)
+            {
+                state.Page.Rotation = state.Rotation;
+                state.Page.IsSelected = state.IsSelected;
+                AddPage(state.Page, Pages.Count);
+            }
+        }
+        finally
+        {
+            restoringSnapshot = false;
         }
 
         RebuildSourceFiles();
         UpdatePageNumbers();
+        CheckPreviewPage();
     }
 
     private void CompleteEdit(string notification)
@@ -965,13 +1172,13 @@ public partial class MainViewModel : ObservableObject
 
         if (string.IsNullOrEmpty(OutputPassword))
         {
-            dialogs.ShowWarning("保存用パスワードを入力してください。");
+            dialogs.ShowWarning(Loc.Get("Warn_PasswordEmpty"));
             return false;
         }
 
         if (OutputPassword != ConfirmOutputPassword)
         {
-            dialogs.ShowWarning("確認用パスワードが一致しません。");
+            dialogs.ShowWarning(Loc.Get("Warn_PasswordMismatch"));
             return false;
         }
 
@@ -988,7 +1195,7 @@ public partial class MainViewModel : ObservableObject
     private Task<bool> CanDiscardCurrentWorkspaceAsync() =>
         !IsDirty
             ? Task.FromResult(true)
-            : dialogs.ConfirmAsync("保存していない編集内容を破棄しますか？");
+            : dialogs.ConfirmAsync(Loc.Get("Confirm_Discard"));
 
     private void AddPage(EditablePdfPage page, int index)
     {
@@ -1106,6 +1313,7 @@ public partial class MainViewModel : ObservableObject
 
         UpdatePageNumbers();
         UpdateDerivedState();
+        CheckPreviewPage();
     }
 
     private void OnPagePropertyChanged(object? sender, PropertyChangedEventArgs eventArgs)
@@ -1138,7 +1346,7 @@ public partial class MainViewModel : ObservableObject
     {
         if (exception.Message.Contains("password", StringComparison.OrdinalIgnoreCase))
         {
-            return "PDFを開けませんでした。パスワードが正しいか確認してください。";
+            return Loc.Get("Error_WrongPassword");
         }
 
         return exception.Message;
