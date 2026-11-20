@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>PdfSyokunin</RootNamespace>
     <AssemblyName>三代目PDF職人</AssemblyName>
-    <Version>1.2.0</Version>
+    <Version>1.3.0</Version>
     <Product>三代目PDF職人</Product>
     <Authors>dekunocode</Authors>
     <Copyright>Copyright (c) 2026 dekunocode</Copyright>
